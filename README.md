@@ -1,25 +1,40 @@
 SUMO routes generate automatically sumo cfg files to simulations based on sumo template located at sim_files folder. Requires folder sctructure (folders) is included in the Project folder: 
 
 Project
+
 ├── outputs
+
 ├── parsed
+
 ├── plots
+
 ├── sim_files
+
 │   ├── DUA
+
 │   ├── O
+
 │   └── SUMO
+
 └── xmltocsv
 
 
-sim_files folder contains sumo templates (files)
+sim_files folder contains sumo templates (files):
 
 sim_files
+
 ├── catalunya.net.xml
+
 ├── catalunya.sumo.cfg
+
 ├── duarouter.cfg.xml
+
 ├── od2trips.cfg.xml
+
 ├── route_files.cfg
+
 ├── TAZ.xml
+
 └── vtype.xml
 
 
@@ -28,9 +43,6 @@ The final file generated from simulations is called data.csv and contains the da
 
 
 ```bash
-Intall curl:
-$sudo apt-get install curl
-
 
 Install anaconda:
 https://www.anaconda.com/products/individual  -> Download last version
@@ -53,4 +65,13 @@ $cd sumo_routes
 
 Create environment:
 $ conda create --name sumo --file environment.txt
+
+
+Activate env:
+$ conda activate sumo
+
+
+To deactivate env :
+$conda deactivate
+
 ```
