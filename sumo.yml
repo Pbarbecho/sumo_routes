@@ -1,0 +1,15 @@
+dependencies:
+    - pandas
+    - pillow
+    - time
+    - os
+    - sys
+    - xml.etree.ElementTree
+    - tqdm
+    - requests
+    - pyyaml
+    - multiprocessing
+    - sumolib
+    - numpy
+    - joblib 
+    - math
