@@ -23,5 +23,5 @@ $cd sumo_routes
 
 
 Create environment:
-$conda env create -f sumo.yml
+$ conda create --name sumo --file environmet.txt
 ```
