@@ -5,6 +5,7 @@ from joblib import Parallel, delayed, parallel_backend
 import math
 import time
 import multiprocessing
+from numpy import save
 
 
 # import sumo tool xmltocsv
@@ -17,11 +18,10 @@ else:
 
     
 
-
 def SUMO_preprocess(options):
     # Process SUMO output files to build the dataset
     # no memmory requiremetns
-    processors = multiprocessing.cpu_count()-2
+    processors = multiprocessing.cpu_count()-15
    
     def save_file(df, name, parsed_dir):
         #print(f'Parsed --> {name}')
@@ -40,44 +40,53 @@ def SUMO_preprocess(options):
         cmd = 'python {} {} -s , -o {}'.format(sumo_tool, os.path.join(options.sumofiles,f), output)
         os.system(cmd)
 
-    def xml2csv(options): 
-        # convert xml to csv
-        files_list = os.listdir(options.sumofiles)
-        set_length = math.ceil(len(files_list)/processors)
-       
+
+
+    def bulid_list_of_df(csv):
+        time.sleep(1)
+        dname = csv.split('.')[0].split('_')
+        data = pd.read_csv(os.path.join(options.xmltocsv, csv))
+        dname.append(data)
+        return dname
+
+
+    def convert_xml2csv(files_list, batch):
         if files_list:
             print(f'\nGenerating {len(files_list)} csv files. This may take a while .........')
             # Parallelize files generation
             with parallel_backend("loky"):
-                Parallel(n_jobs=processors, verbose=0, batch_size=int(set_length))(delayed(parallelxml2csv)(
+                Parallel(n_jobs=processors, verbose=0, batch_size=batch)(delayed(parallelxml2csv)(
                      f, options) for f in tqdm(files_list))
         else:
             sys.exit(f"Empty or missing output data files: {options.sumofiles}")
+
+               
+      
+    def xml2csv(options): 
+        # convert xml to csv
+        files_list = os.listdir(options.sumofiles)
+        batch_size = math.ceil(len(files_list)/processors)
+
+        # convert xmls to csvs
+        #convert_xml2csv(files_list, batch)
         
         # Read generated csvs
         csvs_list = os.listdir(options.xmltocsv)
-        if len(csvs_list) == len(files_list):
+        
+        # pendiente cambiar !=
+        if len(csvs_list) != len(files_list):
             data_list = []
             print(f'\nBuilding {len(csvs_list)} dataframes from sumo outputs ......\n')
-            for csv in tqdm(csvs_list):
-                time.sleep(1)
-                dname = csv.split('.')[0].split('_')
-                data = pd.read_csv(os.path.join(options.xmltocsv, csv))
-                dname.append(data)
-                data_list.append(dname)
-            result_df = pd.DataFrame(data_list, columns=['Hospital', 'Accident', 'Output','Repetition','Dataframe'])
             
-            nfiles = len(result_df.index)
-            efiles = nfiles/len(result_df["Output"].unique()) # total files / number of output sumo (tripinfo, fcd, vehroute)
-            print(f'\nReading {nfiles} files. Expected {efiles} parsed files. This may take a while .........')
-            # Parallelize parse files
-            with parallel_backend("loky"):
-                Parallel(n_jobs=processors, verbose=0, batch_size=int(set_length))(delayed(parallel_parse_output_files)(
-                     key, group_df) for key, group_df in result_df.groupby(['Hospital', 'Accident', 'Repetition']))
-            print(f'Generated: {len(os.listdir(options.parsed))} parsed files')
+            # build list of dataframes        
+            [data_list.append(bulid_list_of_df(csv)) for csv in tqdm(csvs_list)]
+            
+            # convert to a single dataframe
+            result_df = pd.DataFrame(data_list, columns=['Hospital', 'Accident', 'Output','Repetition','Dataframe'])
+            return result_df           
         else:
             sys.exit(f'Missing csv files: {options.xmltocsv}')
-
+            
  
            
     def merge_files(options):
@@ -123,9 +132,11 @@ def SUMO_preprocess(options):
 											      
         
     def lanes_counter_taz_locations(df):
+        
         # contador de edges en ruta
         df['lane_count'] = df['route_edges'].apply(lambda x: len(x.split()))
         df = df.filter(items=['vehicle_id', 'lane_count', 'vehicle_fromTaz', 'vehicle_toTaz']).rename(columns={'vehicle_id':'ID'})
+        
         return df
 
 
@@ -153,7 +164,22 @@ def SUMO_preprocess(options):
         return speed_and_positions
     
     
-    xml2csv(options)                                                                   # Get sumo output files into a dictionary of dataframes
+    def parse_df(df):
+        # process dataframe    
+        nfiles = len(df.index)
+        efiles = nfiles/len(df["Output"].unique()) # total files / number of output sumo (tripinfo, fcd, vehroute)
+       
+        print(f'\nReading {nfiles} dataframes. Expected {efiles} parsed files. This may take a while .........')        
+
+        # group df by features
+        grouped_df = df.groupby(['Hospital', 'Accident', 'Repetition'])
+        # parse dataframe
+        [parallel_parse_output_files(key, group_df) for key, group_df in tqdm(grouped_df)]
+
+
+    # Execute functions               
+    df = xml2csv(options)                                                                   # Get sumo output files into a dictionary of dataframes
+    parse_df(df)
     merge_files(options)
     
     

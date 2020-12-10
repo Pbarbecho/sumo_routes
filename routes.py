@@ -19,8 +19,12 @@ sim_dir = '/root/Documents/SUMO_SEM/CATALUNYA/sim_files'   # directory of sumo c
 routes_output = os.path.join(sim_dir, 'DUA')               # duarouter output files 
 sumo_cfg_output = os.path.join(sim_dir, 'SUMO')   
 simulation_outputs = os.path.join(sim_dir, '../outputs')   # simulation outputs folder   
-xmltocsv_dir = os.path.join(sim_dir,'..', 'xmltocsv') # xml directory
-parsed_dir = os.path.join(sim_dir,'..', 'parsed')
+#xmltocsv_dir = os.path.join(sim_dir,'..', 'xmltocsv') # xml directory
+#parsed_dir = os.path.join(sim_dir,'..', 'parsed')
+# external netwrok drive dueto size GB
+xmltocsv_dir = '/media/lab/xmltocsv' # xml directory
+parsed_dir = '/media/lab/parsed'
+
 
 # SUMO templeates
 o_dir = os.path.join(sim_dir, 'O')                         # O file location
@@ -253,11 +257,11 @@ def SUMO_outputs_process():
       
     
 # Generate cfg files
-#gen_route_files()
+gen_route_files()
 
 # Execute DUArouter 
 exec_DUArouter()
-            
+           
         
 # Execute simulations
 summary()
