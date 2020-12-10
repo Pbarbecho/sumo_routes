@@ -73,8 +73,7 @@ def SUMO_preprocess(options):
         # Read generated csvs
         csvs_list = os.listdir(options.xmltocsv)
         
-        # pendiente cambiar !=
-        if len(csvs_list) != len(files_list):
+        if len(csvs_list) == len(files_list):
             data_list = []
             print(f'\nBuilding {len(csvs_list)} dataframes from sumo outputs ......\n')
             

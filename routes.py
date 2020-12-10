@@ -8,6 +8,10 @@ import time
 import math
 from tqdm import tqdm
 from joblib import Parallel, delayed, parallel_backend
+# import sumo tool xmltocsv
+os.environ['SUMO_HOME']='/opt/sumo-1.5.0'
+
+
 from utils import SUMO_preprocess
 
 
