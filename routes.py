@@ -3,16 +3,14 @@ import xml.etree.ElementTree as ET
 import multiprocessing
 import sumolib
 import pandas as pd
-import numpy as np
 import time
-import math
 from tqdm import tqdm
 from joblib import Parallel, delayed, parallel_backend
+
 # import sumo tool xmltocsv
 os.environ['SUMO_HOME']='/opt/sumo-1.5.0'
 
-
-from utils import SUMO_preprocess
+from utils import SUMO_preprocess, parallel_batch_size
 
 
 # number of cpus
@@ -176,13 +174,6 @@ def exec_duarouter_cmd(fname):
     cmd = f'duarouter -c {fname}'
     os.system(cmd)    
     
-    
-def parallel_batch_size(plist):
-    if len(plist) < processors:
-        batch = 1
-    else:
-        batch = int(math.ceil(len(plist)/processors))
-    return batch
    
     
 def exec_DUArouter():
@@ -249,6 +240,7 @@ def simulate():
         with parallel_backend("loky"):
                 Parallel(n_jobs=processors, verbose=0, batch_size=batch)(delayed(exec_sim_cmd)(s) for s in simulations)
         clean_memory()
+        print(f'\n{len(os.listdir(simulation_outputs))} outputs generated: {simulation_outputs}')
     else:
        sys.exit('No sumo.cfg files}')
   
@@ -266,7 +258,7 @@ def SUMO_outputs_process():
         sumofiles = simulation_outputs
         xmltocsv = xmltocsv_dir
         parsed = parsed_dir
-    data = SUMO_preprocess(options)
+    SUMO_preprocess(options)
     
       
     
