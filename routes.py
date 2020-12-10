@@ -177,24 +177,32 @@ def exec_duarouter_cmd(fname):
     os.system(cmd)    
     
     
+def parallel_batch_size(plist):
+    if len(plist) < processors:
+        batch = 1
+    else:
+        batch = int(math.ceil(len(plist)/processors))
+    return batch
+   
+    
 def exec_DUArouter():
     cfg_files = os.listdir(o_dir)
-    
+  
     # Get dua.cfg files list
     dua_cfg_list = []
     [dua_cfg_list.append(cf) for cf in cfg_files if 'duarouter' in cf.split('_')]
     
-    # Generate dua routes
     if dua_cfg_list:
+        batch = parallel_batch_size(dua_cfg_list)
+        
+        # Generate dua routes
         print(f'\nGenerating duaroutes ({len(dua_cfg_list)} files) ...........\n')
-        if dua_cfg_list: 
-            set_length = math.ceil(len(dua_cfg_list)/processors)
-            # Parallelize files generation
-            with parallel_backend("loky"):
-                Parallel(n_jobs=processors, verbose=0, batch_size=int(set_length))(delayed(exec_duarouter_cmd)(
+        with parallel_backend("loky"):
+            Parallel(n_jobs=processors, verbose=0, batch_size=batch)(delayed(exec_duarouter_cmd)(
                      os.path.join(o_dir, cfg)) for cfg in dua_cfg_list)
     else:
        sys.exit('No dua.cfg files}')
+ 
     
 
 def summary():
@@ -235,9 +243,11 @@ def clean_memory():
 def simulate():
     simulations = os.listdir(sumo_cfg_output)
     if simulations: 
-        set_length = len(simulations)/processors
+        batch = parallel_batch_size(simulations)
+        # Execute simulations
+        print('\nExecuting simulations ....')
         with parallel_backend("loky"):
-                Parallel(n_jobs=processors, verbose=0, batch_size=int(set_length))(delayed(exec_sim_cmd)(s) for s in simulations)
+                Parallel(n_jobs=processors, verbose=0, batch_size=batch)(delayed(exec_sim_cmd)(s) for s in simulations)
         clean_memory()
     else:
        sys.exit('No sumo.cfg files}')
