@@ -5,7 +5,6 @@ import sumolib
 import pandas as pd
 import numpy as np
 import time
-import math
 from tqdm import tqdm
 from joblib import Parallel, delayed, parallel_backend
 
@@ -24,9 +23,11 @@ sumo_cfg_output = os.path.join(sim_dir, 'SUMO')
 simulation_outputs = os.path.join(sim_dir, '../outputs')   # simulation outputs folder   
 xmltocsv_dir = os.path.join(sim_dir,'..', 'xmltocsv') # xml directory
 parsed_dir = os.path.join(sim_dir,'..', 'parsed')
+detector_dir = os.path.join(sim_dir,'detector.add.xml')
+
 
 # Custom routes via
-route_0 = 'Sdjlfi2435'
+route_0 = '237659862#23 208568871#3 208568871#4 208568871#5'
 
 # SUMO templeates
 o_dir = os.path.join(sim_dir, 'O')                         # O file location
@@ -35,14 +36,15 @@ duarouter_conf = os.path.join(sim_dir,'duarouter.cfg.xml') # duaroter.cfg file l
 sumo_cfg = os.path.join(sim_dir, 'osm.sumo.cfg')
 
 # Informacion de origen / destino como aparece en TAZ file 
-origin_district = ['Hospitalet',]
+origin_district = ['LesCorts']
 destination_distric = ['PgSanJoan']
     
 # General settings
 veh_num = 10  # number of vehicles in O file
 n_repetitions = 1 # number of repetitions 
 sim_time = 24 # in hours # TO DO parameter of time in files
-factor = 10 # multiplied by the number of vehicles
+end_hour = 24
+factor = 1.1 # multiplied by the number of vehicles
 
 
 
@@ -53,6 +55,7 @@ class folders:
     xml2csv = xmltocsv_dir
     parse = parsed_dir
     O = o_dir
+    detector = detector_dir
         
     
 def clean_folder(folder):
@@ -98,15 +101,35 @@ def gen_route_files():
     
 
 def create_O_file(fname, origin_district, destination_distric, vehicles):
-    O = open(f"{fname}", "w")
-    text_list = ['$OR;D2\n',               # O format
-                 f'0.00 {sim_time}.00\n',  # Time 0-48 hours
-                 f'{factor}.00\n',         # Multiplication factor
-                 f'{origin_district} '     # Origin
-             	 f'{destination_distric} ',   # Destination
-                 f'{vehicles}']            # NUmber of vehicles x multiplication factor
-    O.writelines(text_list)
-    O.close()
+    #create 24 hour files
+    traffic = pd.read_csv('/root/Desktop/MSWIM/Revista/TrafficPgSanJoan.csv')
+ 
+    df = pd.DataFrame(traffic)
+    #traffic_24 = traffic_df['Total'].values
+    name = os.path.basename(fname)
+     
+    col = list(df)
+    col = col[1:-1]
+    for hour in range(end_hour):  #hora
+        for minute in col:    # minuto
+            vehicles = df[minute][hour]
+            
+            h = hour
+            m = str(minute)
+            until = int(minute) + 15
+            
+            O_file_name = os.path.join(o_dir,f'{h}_{m}_{name}')
+            O = open(f"{O_file_name}", "w")
+            
+            #num_vehicles = traffic_24[h] * 1.1 # margin of duarouter checkroutes
+            text_list = ['$OR;D2\n',               # O format
+                     f'{h}.{m} {h}.{until}\n',  # Time 0-48 hours
+                     f'{factor}\n',         # Multiplication factor
+                     f'{origin_district} '     # Origin
+                 	 f'{destination_distric} ',   # Destination
+                     f'{vehicles}']            # NUmber of vehicles x multiplication factor
+            O.writelines(text_list)
+            O.close()
 
 
 def custom_routes(trips, k):
@@ -158,12 +181,16 @@ def gen_DUArouter(trips, i):
     
     
 def gen_od2trips(O,k):
+    # read O files
+    O_files_list = os.listdir(o_dir)
+    O_listToStr = ' '.join([f'{os.path.join(o_dir, elem)},' for elem in O_files_list]) 
+    O_listToStr = O_listToStr[:-1] # delete last coma
     # Open original file
     tree = ET.parse(od2trips_conf)
     
     # Update O input
     parent = tree.find('input')
-    ET.SubElement(parent, 'od-matrix-files').set('value', f'{O}')    
+    ET.SubElement(parent, 'od-matrix-files').set('value', f'{O_listToStr}')    
             
     # Update output
     parent = tree.find('output')
@@ -187,7 +214,10 @@ def gen_sumo_cfg(dua, k):
     # Update rou input
     parent = tree.find('input')
     ET.SubElement(parent, 'route-files').set('value', f'{dua}')    
-            
+    
+    # Update detector
+    ET.SubElement(parent, 'additional-files').set('value', f'{detector_dir}')    
+
     # Update outputs
     parent = tree.find('output')
     curr_name = os.path.basename(dua).split('_')
@@ -297,6 +327,7 @@ def SUMO_outputs_process():
         sumofiles = simulation_outputs
         xmltocsv = xmltocsv_dir
         parsed = parsed_dir
+    
     SUMO_preprocess(options)
       
 
@@ -307,6 +338,7 @@ clean_folder(folders.outputs)
 clean_folder(folders.parse)
 clean_folder(folders.xml2csv)
 clean_folder(folders.O)
+clean_folder(folders.detector)
 
 # Generate cfg files
 gen_route_files()

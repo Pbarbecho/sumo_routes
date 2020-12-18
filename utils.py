@@ -179,10 +179,11 @@ def SUMO_preprocess(options):
         [parallel_parse_output_files(key, group_df) for key, group_df in tqdm(grouped_df)]
 
 
+   
     # Execute functions               
     df = xml2csv(options)   # Convert outputs to csv 
-    parse_df(df)            # Convert csv to dataframes and filter files fileds
-    merge_files(options)    # Merge dataframes into a single file 'data.csv'
+  #  parse_df(df)            # Convert csv to dataframes and filter files fileds
+  #  merge_files(options)    # Merge dataframes into a single file 'data.csv'
     
     
     
