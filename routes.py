@@ -13,10 +13,8 @@ os.environ['SUMO_HOME']='/opt/sumo-1.5.0'
 
 from utils import SUMO_preprocess, parallel_batch_size
 
-# number of cpus
-processors = multiprocessing.cpu_count() # due to memory lack -> Catalunya  map = 2GB
 
-# Static paths
+################# Path settings ##################
 sim_dir = '/root/Desktop/MSWIM/Revista/sim_files'   # directory of sumo cfg files
 routes_output = os.path.join(sim_dir, 'DUA')               # duarouter output files 
 sumo_cfg_output = os.path.join(sim_dir, 'SUMO')   
@@ -26,26 +24,30 @@ parsed_dir = os.path.join(sim_dir,'..', 'parsed')
 detector_dir = os.path.join(sim_dir,'detector.add.xml')
 
 
-# Custom routes via
-route_0 = '237659862#23 208568871#3 208568871#4 208568871#5'
-
 # SUMO templeates
 o_dir = os.path.join(sim_dir, 'O')                         # O file location
+cfg_dir =  os.path.join(sim_dir, 'CONFIG') 
 od2trips_conf = os.path.join(sim_dir,'od2trips.cfg.xml')   # od2trips.cfg file location     
 duarouter_conf = os.path.join(sim_dir,'duarouter.cfg.xml') # duaroter.cfg file location
 sumo_cfg = os.path.join(sim_dir, 'osm.sumo.cfg')
+
+################# General settings ##################
 
 # Informacion de origen / destino como aparece en TAZ file 
 origin_district = ['LesCorts']
 destination_distric = ['PgSanJoan']
     
-# General settings
-veh_num = 10  # number of vehicles in O file
-n_repetitions = 1 # number of repetitions 
-sim_time = 24 # in hours # TO DO parameter of time in files
+
+# number of cpus
+processors = multiprocessing.cpu_count() # due to memory lack -> Catalunya  map = 2GB
+#veh_num = 10  # number of vehicles in O file
+n_repetitions = 2 # number of repetitions 
+#sim_time = 24 # in hours # TO DO parameter of time in files
 end_hour = 24
 factor = 1.1 # multiplied by the number of vehicles
-
+# Path del archivo con los accidentes
+# El archivo de accidentes debe tener 3 columnas [Hour | Accidents_Comarca | Total ]
+accidents = pd.read_csv('/root/Desktop/MSWIM/Revista/TrafficPgSanJoan.csv')
 
 
 class folders:
@@ -72,12 +74,12 @@ def gen_routes(O, k):
     # Execute od2trips
     exec_od2trips(cfg_name)
     
-    # Custom route via='edges'
-    via_trip = custom_routes(output_name, k)
-    
+   
     # Generate DUArouter cfg
-    cfg_name, output_name = gen_DUArouter(via_trip, k)
+    #cfg_name, output_name = gen_DUArouter(via_trip, k)
+    cfg_name, output_name = gen_DUArouter(output_name, k)
         
+    
     # Generate sumo cfg
     gen_sumo_cfg(output_name, k)
     
@@ -91,39 +93,38 @@ def gen_route_files():
             
             # build O file    
             O_name = os.path.join(o_dir, f'{h}_{sd}')
-            create_O_file(O_name, f'{h}', f'{sd}', veh_num)
+            cfg_name = os.path.join(cfg_dir, f'{h}_{sd}')
+            create_O_file(O_name, f'{h}', f'{sd}')
             
             # Generate cfg files 
             for k in tqdm(range(n_repetitions)):
                 time.sleep(1) 
-                gen_routes(O_name, k)
+                gen_routes(cfg_name, k)
     
     
 
-def create_O_file(fname, origin_district, destination_distric, vehicles):
+def create_O_file(fname, origin_district, destination_distric):
     #create 24 hour files
-    traffic = pd.read_csv('/root/Desktop/MSWIM/Revista/TrafficPgSanJoan.csv')
- 
-    df = pd.DataFrame(traffic)
+    
+    # dataframe of accidentes from external file
+    df = pd.DataFrame(accidents)
     #traffic_24 = traffic_df['Total'].values
     name = os.path.basename(fname)
      
     col = list(df)
-    col = col[1:-1]
-    for hour in range(end_hour):  #hora
-        for minute in col:    # minuto
-            vehicles = df[minute][hour]
+    col = col[1:-1] # elimino primera y ultima columna
+    
+    for hour in range(end_hour):  # 24 horas
+        for comarca in col:    # minuto
             
-            h = hour
-            m = str(minute)
-            until = int(minute) + 15
-            
-            O_file_name = os.path.join(o_dir,f'{h}_{m}_{name}')
+            vehicles = df[comarca][hour]
+             
+            O_file_name = os.path.join(o_dir,f'{hour}_{comarca}_{name}')
             O = open(f"{O_file_name}", "w")
             
             #num_vehicles = traffic_24[h] * 1.1 # margin of duarouter checkroutes
             text_list = ['$OR;D2\n',               # O format
-                     f'{h}.{m} {h}.{until}\n',  # Time 0-48 hours
+                     f'{hour}.00 {hour+1}.00\n',  # Time 0-48 hours
                      f'{factor}\n',         # Multiplication factor
                      f'{origin_district} '     # Origin
                  	 f'{destination_distric} ',   # Destination
@@ -131,26 +132,6 @@ def create_O_file(fname, origin_district, destination_distric, vehicles):
             O.writelines(text_list)
             O.close()
 
-
-def custom_routes(trips, k):
-    trip = os.path.join(o_dir, trips)
-    
-    # Open original file
-    tree = ET.parse(trip)
-    root = tree.getroot()
-     
-    # Update via route in xml
-    [child.set('via', route_0) for child in root]
-
-    # name    
-    curr_name = os.path.basename(trips).split('_')
-    curr_name = curr_name[0] + '_' + curr_name[1]
-    output_name = os.path.join(o_dir, f'{curr_name}_trips_{k}.rou.xml')
-           
-    # Write xml
-    cfg_name = os.path.join(o_dir, output_name)
-    tree.write(cfg_name) 
-    return output_name
     
     
 def gen_DUArouter(trips, i):
@@ -159,7 +140,9 @@ def gen_DUArouter(trips, i):
     
     # Update trip input
     parent = tree.find('input')
-    ET.SubElement(parent, 'route-files').set('value', f'{trips}')    
+    trips_name = os.path.basename(trips)
+    trips_path = os.path.join(cfg_dir, trips_name)
+    ET.SubElement(parent, 'route-files').set('value', f'{trips_path}')    
      
     # Update output
     parent = tree.find('output')
@@ -215,9 +198,6 @@ def gen_sumo_cfg(dua, k):
     parent = tree.find('input')
     ET.SubElement(parent, 'route-files').set('value', f'{dua}')    
     
-    # Update detector
-    ET.SubElement(parent, 'additional-files').set('value', f'{detector_dir}')    
-
     # Update outputs
     parent = tree.find('output')
     curr_name = os.path.basename(dua).split('_')
@@ -246,7 +226,7 @@ def exec_duarouter_cmd(fname):
 
     
 def exec_DUArouter():
-    cfg_files = os.listdir(o_dir)
+    cfg_files = os.listdir(cfg_dir)
   
     # Get dua.cfg files list
     dua_cfg_list = []
@@ -259,7 +239,7 @@ def exec_DUArouter():
         print(f'\nGenerating duaroutes ({len(dua_cfg_list)} files) ...........\n')
         with parallel_backend("loky"):
             Parallel(n_jobs=processors, verbose=0, batch_size=batch)(delayed(exec_duarouter_cmd)(
-                     os.path.join(o_dir, cfg)) for cfg in dua_cfg_list)
+                     os.path.join(cfg_dir, cfg)) for cfg in dua_cfg_list)
     else:
        sys.exit('No dua.cfg files}')
  

@@ -129,6 +129,7 @@ def SUMO_preprocess(options):
         tripinfo_df = veh_trip_info(tripinfo) 
         # merge dataframes
         sdata = taz_locations_edgenum_df.merge(veh_speed_positions_df,on='ID').merge(tripinfo_df,on='ID')
+        sdata['Repetition'] = key[2] 
         # save each scenario in parsed files
         save_file(sdata, f'{df_name}', options.parsed)
 						
@@ -182,8 +183,8 @@ def SUMO_preprocess(options):
    
     # Execute functions               
     df = xml2csv(options)   # Convert outputs to csv 
-  #  parse_df(df)            # Convert csv to dataframes and filter files fileds
-  #  merge_files(options)    # Merge dataframes into a single file 'data.csv'
+    parse_df(df)            # Convert csv to dataframes and filter files fileds
+    merge_files(options)    # Merge dataframes into a single file 'data.csv'
     
     
     
