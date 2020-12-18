@@ -12,6 +12,8 @@ Project
 
 │   ├── DUA
 
+│   ├── CONFIG
+
 │   ├── O
 
 │   └── SUMO
@@ -35,7 +37,10 @@ sim_files
 
 ├── TAZ.xml
 
+├── Accidents.csv
+
 └── vtype.xml
+
 
 
 The final file generated from simulations is called data.csv and contains the dataset of sumo output simulations. 
