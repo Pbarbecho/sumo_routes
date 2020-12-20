@@ -9,7 +9,7 @@ from tqdm import tqdm
 from joblib import Parallel, delayed, parallel_backend
 
 # import sumo tool xmltocsv
-os.environ['SUMO_HOME']='/opt/sumo-1.5.0'
+os.environ['SUMO_HOME']='/opt/sumo-1.8.0'
 
 from utils import SUMO_preprocess, parallel_batch_size
 
@@ -327,10 +327,10 @@ def SUMO_outputs_process():
         sumofiles = simulation_outputs
         xmltocsv = xmltocsv_dir
         parsed = parsed_dir
-    
+        detector = '/root/Desktop/MSWIM/Revista/detector'
     SUMO_preprocess(options)
       
-
+"""
 # Clear folders
 clean_folder(folders.dua)
 clean_folder(folders.cfg)
@@ -339,6 +339,7 @@ clean_folder(folders.parse)
 clean_folder(folders.xml2csv)
 clean_folder(folders.O)
 clean_folder(folders.detector)
+
 
 # Generate cfg files
 gen_route_files()
@@ -351,6 +352,6 @@ summary()
 
 # Exec simulations
 simulate()     
-
+"""
 # Outputs preprocess
 SUMO_outputs_process()

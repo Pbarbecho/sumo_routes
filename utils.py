@@ -11,7 +11,7 @@ processors = multiprocessing.cpu_count() # due to memory lack -> Catalunya  map 
 
 # import sumo tool xmltocsv
 if 'SUMO_HOME' in os.environ:
-    tools = os.path.join('/opt/sumo-1.5.0/', 'tools')
+    tools = os.path.join('/opt/sumo-1.8.0/', 'tools')
     curr_dir = os.path.dirname(os.path.realpath(__file__))
     sys.path.append(os.path.join(tools))
 else:
@@ -44,6 +44,14 @@ def SUMO_preprocess(options):
         cmd = 'python {} {} -s , -o {}'.format(sumo_tool, os.path.join(options.sumofiles,f), output)
         os.system(cmd)
 
+    def singlexml2csv(f, options):
+        # output directory
+        output = os.path.join(options.detector, f'{f.strip(".xml")}.csv')
+        # SUMO tool xml into csv
+        sumo_tool = os.path.join(tools, 'xml', 'xml2csv.py')
+        # Run sumo tool with sumo output file as input
+        cmd = 'python {} {} -s , -o {}'.format(sumo_tool, os.path.join(options.detector,f), output)
+        os.system(cmd)
 
 
     def bulid_list_of_df(csv):
@@ -179,11 +187,14 @@ def SUMO_preprocess(options):
         [parallel_parse_output_files(key, group_df) for key, group_df in tqdm(grouped_df)]
 
 
-   
+    # converte dector to csv
+    singlexml2csv(os.listdir(options.detector)[0], options) 
+    
+    
     # Execute functions               
     df = xml2csv(options)   # Convert outputs to csv 
-  #  parse_df(df)            # Convert csv to dataframes and filter files fileds
-  #  merge_files(options)    # Merge dataframes into a single file 'data.csv'
+    parse_df(df)            # Convert csv to dataframes and filter files fileds
+    merge_files(options)    # Merge dataframes into a single file 'data.csv'
     
     
     
