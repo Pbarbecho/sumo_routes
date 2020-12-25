@@ -61,7 +61,7 @@ class folders:
 def clean_folder(folder):
     files = glob.glob(os.path.join(folder,'*'))
     [os.remove(f) for f in files]
-    
+    print(f'Cleanned: {folder}')
     
 
 def gen_routes(O, k):
@@ -183,8 +183,8 @@ def gen_DUArouter(trips, i):
 def gen_od2trips(O,k):
     # read O files
     O_files_list = os.listdir(o_dir)
-    O_listToStr = ' '.join([f'{os.path.join(o_dir, elem)},' for elem in O_files_list]) 
-    O_listToStr = O_listToStr[:-1] # delete last coma
+    O_listToStr = ','.join([f'{os.path.join(o_dir, elem)}' for elem in O_files_list]) 
+    #O_listToStr = O_listToStr[:-1] # delete last coma
     # Open original file
     tree = ET.parse(od2trips_conf)
     
@@ -330,7 +330,8 @@ def SUMO_outputs_process():
         detector = '/root/Desktop/MSWIM/Revista/detector'
     SUMO_preprocess(options)
       
-"""
+    
+
 # Clear folders
 clean_folder(folders.dua)
 clean_folder(folders.cfg)
@@ -352,6 +353,6 @@ summary()
 
 # Exec simulations
 simulate()     
-"""
+
 # Outputs preprocess
 SUMO_outputs_process()

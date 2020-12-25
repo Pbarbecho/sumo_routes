@@ -6,6 +6,10 @@ import math
 import time
 import multiprocessing
 
+
+# import sumo tool xmltocsv
+os.environ['SUMO_HOME']='/opt/sumo-1.8.0'
+
 # number of cpus
 processors = multiprocessing.cpu_count() # due to memory lack -> Catalunya  map = 2GB
 
@@ -92,7 +96,7 @@ def SUMO_preprocess(options):
             
             # build list of dataframes        
             [data_list.append(bulid_list_of_df(csv)) for csv in tqdm(csvs_list)]
-            
+           
             # convert to a single dataframe
             result_df = pd.DataFrame(data_list, columns=['Origin', 'Destination', 'Output','Repetition','Dataframe'])
             return result_df           
@@ -128,25 +132,29 @@ def SUMO_preprocess(options):
     def parallel_parse_output_files(key, group_df):
         # save parsed files
         df_name = f'{key[0]}_{key[1]}_{key[2]}'
+        
         # Process sumo outputs
-        vehroute = group_df.loc[group_df['Output'] == 'vehroute', 'Dataframe'].iloc[0]
+        #vehroute = group_df.loc[group_df['Output'] == 'vehroute', 'Dataframe'].iloc[0]
+        #vehroute = vehroute.filter(['route_edges','vehicle_arrival','vehicle_depart','vehicle_departSpeed','vehicle_id','vehicle_routeLength'])
+        #vehroute['route_edges'] = vehroute['route_edges'].fillna(0)
+               
         fcd = group_df.loc[group_df['Output'] == 'fcd', 'Dataframe'].iloc[0]
         tripinfo = group_df.loc[group_df['Output'] == 'tripinfo', 'Dataframe'].iloc[0]
-        taz_locations_edgenum_df = lanes_counter_taz_locations(vehroute)                  # Count edges on route from vehroute file and get from/to TAZ locations
+        #taz_locations_edgenum_df = lanes_counter_taz_locations(vehroute)                  # Count edges on route from vehroute file and get from/to TAZ locations
         veh_speed_positions_df = avrg_speed_and_geo_positions(fcd)                        # Get average speed and initial/end positions (x,y)
         tripinfo_df = veh_trip_info(tripinfo) 
         # merge dataframes
-        sdata = taz_locations_edgenum_df.merge(veh_speed_positions_df,on='ID').merge(tripinfo_df,on='ID')
+        #sdata = taz_locations_edgenum_df.merge(veh_speed_positions_df,on='ID').merge(tripinfo_df,on='ID')
+        sdata = veh_speed_positions_df.merge(tripinfo_df,on='ID')
         # save each scenario in parsed files
         save_file(sdata, f'{df_name}', options.parsed)
-						
-											      
-        
+
+
+       
     def lanes_counter_taz_locations(df):
         # contador de edges en ruta
-        df['lane_count'] = df['route_edges'].apply(lambda x: len(x.split()))
+        df['lane_count'] = df['route_edges'].apply(lambda x: len(str(x).split()))
         df = df.filter(items=['vehicle_id', 'lane_count', 'vehicle_fromTaz', 'vehicle_toTaz']).rename(columns={'vehicle_id':'ID'})
-        
         return df
 
 
