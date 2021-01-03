@@ -5,7 +5,8 @@ from joblib import Parallel, delayed, parallel_backend
 import math
 import time
 import multiprocessing
-
+import xml.etree.ElementTree as ET
+import psutil
 
 # import sumo tool xmltocsv
 os.environ['SUMO_HOME']='/opt/sumo-1.8.0'
@@ -28,6 +29,28 @@ def parallel_batch_size(plist):
     else:
         batch = int(math.ceil(len(plist)/processors))
     return batch
+
+
+def detector_cfg(detector_template, detector_cfg, output):
+    # full path 
+    tree = ET.parse(detector_template)
+    root = tree.getroot()
+    for child in root:
+        child.set('file', f'{output}')  
+    
+    tree.write(detector_cfg) 
+
+
+
+def kill_cpu_pid():
+    process_name = "cpu_mem_check.s"
+    for proc in psutil.process_iter():
+        if process_name in proc.name():
+           pid = proc.pid
+           os.system(f'kill {pid}')
+           print(f'\nCPU pid={pid} killed')
+           
+       
 
 
 def SUMO_preprocess(options):
