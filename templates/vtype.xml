@@ -1,0 +1,4 @@
+<vehiculos>
+	<vType id="passenger" speedFactor="normc(1,0.4,0.7,1.3)" vClass="passenger" color="yellow"/>
+	<!--<vType id="passenger" speedFactor="1" vClass="passenger" color="yellow"/>-->
+</vehiculos>

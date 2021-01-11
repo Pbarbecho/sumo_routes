@@ -55,12 +55,17 @@ duarouter_conf = os.path.join(sim_dir,'templates','duarouter.cfg.xml') # duarote
 marouter_conf = os.path.join(sim_dir,'templates','marouter.cfg.xml') # duaroter.cfg file location
 sumo_cfg = os.path.join(sim_dir,'templates', 'osm.sumo.cfg')
 od2trips_conf =  os.path.join(sim_dir,'templates', 'od2trips.cfg.xml')
-TAZ = os.path.join(sim_dir,'templates', 'TAZ.xml')
+
+if routing == 'dua':
+    TAZ = os.path.join(sim_dir,'templates', 'TAZ.xml')
+else:
+    TAZ = os.path.join(sim_dir,'templates', 'TAZ2.xml')
+
 vtype = os.path.join(sim_dir,'templates', 'vtype.xml')
 
 # New paths
 create_folder(new_dir)  
-folders = ['trips', 'O', 'dua', 'ma', 'cfg', 'outputs', 'detector', 'xmltocsv', 'parsed', 'reroute']
+folders = ['emissions','trips', 'O', 'dua', 'ma', 'cfg', 'outputs', 'detector', 'xmltocsv', 'parsed', 'reroute']
 [create_folder(os.path.join(new_dir, f)) for f in folders]
 
 
@@ -75,6 +80,7 @@ parsed = os.path.join(new_dir, 'parsed')
 reroute = os.path.join(new_dir, 'reroute')
 trips = os.path.join(new_dir, 'trips')
 ma = os.path.join(new_dir, 'ma')
+emissions = os.path.join(new_dir, 'emissions')
 
 # Create detector file
 detector_dir = os.path.join(new_dir,'detector.add.xml')
@@ -82,7 +88,8 @@ detector_cfg(os.path.join(sim_dir,'templates', 'detector.add.xml'),detector_dir,
 
 
 # Custom routes via
-route_0 = '237659862#23 208568871#3 208568871#4 208568871#5'
+#route_0 = '237659862#23 208568871#3 208568871#4 208568871#5'
+route_0 = '208568871#5'
 
 
 class folders:
@@ -97,6 +104,7 @@ class folders:
     O = O
     trips=trips 
     ma=ma
+    emissions = emissions
     
 def clean_folder(folder):
     files = glob.glob(os.path.join(folder,'*'))
@@ -114,6 +122,7 @@ def gen_routes(O, k, O_files):
     
     # Custom route via='edges'
     via_trip = custom_routes(output_name, k)
+   
     
     if routing == 'dua':
     
@@ -123,6 +132,7 @@ def gen_routes(O, k, O_files):
         # Generate sumo cfg
         gen_sumo_cfg('dua', output_name, k)
          
+              
     elif routing == 'ma':
         # Generate MArouter cfg
         cfg_name, output_name = gen_MArouter(O, k, O_files, via_trip)
@@ -276,14 +286,15 @@ def gen_od2trips(O,k):
     # read O files
     O_files_list = os.listdir(folders.O)
     O_listToStr = ','.join([f'{os.path.join(folders.O, elem)}' for elem in O_files_list]) 
-    #O_listToStr = O_listToStr[:-1] # delete last coma
+   
     # Open original file
     tree = ET.parse(od2trips_conf)
     
     # Update O input
     parent = tree.find('input')
     ET.SubElement(parent, 'od-matrix-files').set('value', f'{O_listToStr}')    
-            
+    ET.SubElement(parent, 'taz-files').set('value', f'{TAZ}')    
+    
     # Update output
     parent = tree.find('output')
     output_name = f'{O}_od2_{k}.trip.xml'
@@ -342,15 +353,18 @@ def gen_sumo_cfg(routing,dua, k):
     
     
 def exec_od2trips(fname):
+    print('\nSimulando .......')
     cmd = f'od2trips -c {fname}'
     os.system(cmd)
 
 
 def exec_duarouter_cmd(fname):
+    print('\nSimulando .......')
     cmd = f'duarouter -c {fname}'
     os.system(cmd)    
 
 def exec_marouter_cmd(fname):
+    print('\nSimulando .......')
     cmd = f'marouter -c {fname}'
     os.system(cmd) 
 
@@ -362,7 +376,19 @@ def exec_DUArouter():
     # Get dua.cfg files list
     dua_cfg_list = []
     [dua_cfg_list.append(cf) for cf in cfg_files if 'duarouter' in cf.split('_')]
+ 
+    """
+    # duaiterate for iterative assigment
+    sumo_tool = '/opt/sumo-1.8.0/tools/assign/duaIterate.py'
+    net_file = '/root/Desktop/MSWIM/Revista/sim_files/templates/osm.net.xml'
     
+    trip_file = '/root/Desktop/MSWIM/Revista/sim_files/Taz/dua/0_0/O/Hospitalet_SanAdria_trips_0.rou.xml'
+    n_iter = 10
+    
+    cmd = f'python {sumo_tool} -n {net_file} -+ {vtype} -t {trip_file} -l {n_iter}'
+    os.system(cmd)
+    
+    """
     if dua_cfg_list:
         batch = parallel_batch_size(dua_cfg_list)
         
@@ -373,7 +399,7 @@ def exec_DUArouter():
                      os.path.join(folders.O, cfg)) for cfg in dua_cfg_list)
     else:
        sys.exit('No dua.cfg files}')
- 
+    
     
  
 def exec_MArouter():
@@ -461,6 +487,7 @@ def SUMO_outputs_process():
         xmltocsv = csv
         parsed = parsed
         detector = detector
+        emissions = emissions
     SUMO_preprocess(options)
       
         
@@ -473,6 +500,7 @@ if routing  == 'dua':
 else:           
     # Execute DUArouter 
     exec_MArouter()
+
 
 # Execute simulations
 summary()

@@ -27,7 +27,7 @@ end_hour = 24
 seed = 0
 k = 0
 # reroute probability
-rr_prob = 1
+rr_prob = 0
 
 
 # Informacion de origen / destino como aparece en TAZ file 
@@ -128,10 +128,9 @@ def RandomTrips():
             --trip-attributes 'type=\"{vtype}\" departSpeed=\"0\"' \
             --edge-permission passenger  \
             -s {seed}  \
-            --validate \
             -o {output}"
         os.system(cmd)
-    
+    #--validate \
     
     def custom_routes():
         randomtrips = os.listdir(folders.random_dir)

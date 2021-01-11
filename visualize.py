@@ -14,7 +14,7 @@ import matplotlib as mpl
 from matplotlib import rc
 import matplotlib.colors as mcolors
 import os
-
+from scipy.interpolate import interp1d
 
 rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 ## for Palatino and other serif fonts use:
@@ -26,78 +26,90 @@ output_dir = '/root/Desktop/MSWIM/Revista/sim_files'
 # real traffic on Travessera de Gracia
 traffic = pd.read_csv('/root/Desktop/MSWIM/Revista/TrafficPgSanJoan.csv')
 
-
-
 origin = 'Hospitalet'
 destination = 'SanAdria'
 #################################### Reroute 0 ####################################
-# taz ma rr=0 
 taz_ma_df_0 = pd.read_csv('/root/Desktop/MSWIM/Revista/sim_files/Taz/ma/0_0/detector/detector.csv')
-summary_taz_ma_df_0 = pd.read_csv(f"/root/Desktop/MSWIM/Revista/sim_files/Taz/ma/0_0/xmltocsv/{origin}_{destination}_summary_0.csv")
-
-# taz dua rr=0 
 taz_dua_df_0 = pd.read_csv('/root/Desktop/MSWIM/Revista/sim_files/Taz/dua/0_0/detector/detector.csv')
-summary_taz_dua_df_0 = pd.read_csv(f"/root/Desktop/MSWIM/Revista/sim_files/Taz/dua/0_0/xmltocsv/{origin}_{destination}_summary_0.csv")
-
-# random rr=0
 random_df_0 = pd.read_csv('/root/Desktop/MSWIM/Revista/sim_files/RandomTrips/0_0/detector/detector.csv')
-summary_random_df_0 = pd.read_csv(f"/root/Desktop/MSWIM/Revista/sim_files/RandomTrips/0_0/xmltocsv/{origin}_{destination}_summary_0.csv")
+taz_od2_df_0 = pd.read_csv('/root/Desktop/MSWIM/Revista/sim_files/Taz/od2/0_0/detector/detector.csv')
+taz_duaiter_df_0 = pd.read_csv('/root/Desktop/MSWIM/Revista/sim_files/Taz/duaiterate/0_0/detector/detector.csv')
+
 
 # SUMO outputs
 random_traffic_metrics_df_0 = pd.read_csv('/root/Desktop/MSWIM/Revista/sim_files/RandomTrips/0_0/parsed/data.csv')
 taz_ma_traffic_metrics_df_0 =  pd.read_csv('/root/Desktop/MSWIM/Revista/sim_files/Taz/ma/0_0/parsed/data.csv')
 taz_dua_traffic_metrics_df_0 =  pd.read_csv('/root/Desktop/MSWIM/Revista/sim_files/Taz/dua/0_0/parsed/data.csv')
-# SUMO summary.shift()
+taz_od2_traffic_metrics_df_0 =  pd.read_csv('/root/Desktop/MSWIM/Revista/sim_files/Taz/od2/0_0/parsed/data.csv')
+taz_duaiter_traffic_metrics_df_0 =  pd.read_csv('/root/Desktop/MSWIM/Revista/sim_files/Taz/duaiterate/0_0/parsed/data.csv')
+
+# SUMO summary
 taz_dua_summary_df_0 =  pd.read_csv(f'/root/Desktop/MSWIM/Revista/sim_files/Taz/dua/0_0/xmltocsv/{origin}_{destination}_summary_0.csv')
 taz_ma_summary_df_0 =  pd.read_csv(f'/root/Desktop/MSWIM/Revista/sim_files/Taz/ma/0_0/xmltocsv/{origin}_{destination}_summary_0.csv')
+taz_od2_summary_df_0 =  pd.read_csv(f'/root/Desktop/MSWIM/Revista/sim_files/Taz/od2/0_0/xmltocsv/{origin}_{destination}_summary_0.csv')
 random_summary_df_0 =  pd.read_csv(f'/root/Desktop/MSWIM/Revista/sim_files/RandomTrips/0_0/xmltocsv/{origin}_{destination}_summary_0.csv')
+taz_duaiter_summary_df_0 =  pd.read_csv(f'/root/Desktop/MSWIM/Revista/sim_files/Taz/duaiterate/0_0/xmltocsv/{origin}_{destination}_summary_0.csv')
+
 ###################################################################################
 
 #################################### Reroute 1 ####################################
-
-# taz ma rr=1 
 taz_ma_df_1 = pd.read_csv('/root/Desktop/MSWIM/Revista/sim_files/Taz/ma/0_1/detector/detector.csv')
-summary_taz_ma_df_1 = pd.read_csv(f"/root/Desktop/MSWIM/Revista/sim_files/Taz/ma/0_1/xmltocsv/{origin}_{destination}_summary_0.csv")
-
-# taz dua rr=1 
 taz_dua_df_1 = pd.read_csv('/root/Desktop/MSWIM/Revista/sim_files/Taz/dua/0_1/detector/detector.csv')
-summary_taz_dua_df_1 = pd.read_csv(f"/root/Desktop/MSWIM/Revista/sim_files/Taz/dua/0_1/xmltocsv/{origin}_{destination}_summary_0.csv")
-
-# random rr=1
+taz_od2_df_1 = pd.read_csv('/root/Desktop/MSWIM/Revista/sim_files/Taz/od2/0_1/detector/detector.csv')
 random_df_1 = pd.read_csv('/root/Desktop/MSWIM/Revista/sim_files/RandomTrips/0_1/detector/detector.csv')
-summary_random_df_1 = pd.read_csv(f"/root/Desktop/MSWIM/Revista/sim_files/RandomTrips/0_1/xmltocsv/{origin}_{destination}_summary_0.csv")
+taz_duaiter_df_1 = pd.read_csv('/root/Desktop/MSWIM/Revista/sim_files/Taz/duaiterate/0_1/detector/detector.csv')
+
+
 # SUMO Outputs
 random_traffic_metrics_df_1 = pd.read_csv('/root/Desktop/MSWIM/Revista/sim_files/RandomTrips/0_1/parsed/data.csv')
 taz_ma_traffic_metrics_df_1 =  pd.read_csv('/root/Desktop/MSWIM/Revista/sim_files/Taz/ma/0_1/parsed/data.csv')
 taz_dua_traffic_metrics_df_1 =  pd.read_csv('/root/Desktop/MSWIM/Revista/sim_files/Taz/dua/0_1/parsed/data.csv')    
+taz_od2_traffic_metrics_df_1 =  pd.read_csv('/root/Desktop/MSWIM/Revista/sim_files/Taz/od2/0_1/parsed/data.csv')    
+taz_duaiter_traffic_metrics_df_1 =  pd.read_csv('/root/Desktop/MSWIM/Revista/sim_files/Taz/duaiterate/0_1/parsed/data.csv')
+
 # SUMO summary
 taz_dua_summary_df_1 =  pd.read_csv(f'/root/Desktop/MSWIM/Revista/sim_files/Taz/dua/0_1/xmltocsv/{origin}_{destination}_summary_0.csv')
 taz_ma_summary_df_1 =  pd.read_csv(f'/root/Desktop/MSWIM/Revista/sim_files/Taz/ma/0_1/xmltocsv/{origin}_{destination}_summary_0.csv')
+taz_od2_summary_df_1 =  pd.read_csv(f'/root/Desktop/MSWIM/Revista/sim_files/Taz/od2/0_1/xmltocsv/{origin}_{destination}_summary_0.csv')
 random_summary_df_1 =  pd.read_csv(f'/root/Desktop/MSWIM/Revista/sim_files/RandomTrips/0_1/xmltocsv/{origin}_{destination}_summary_0.csv')
+taz_duaiter_summary_df_1 =  pd.read_csv(f'/root/Desktop/MSWIM/Revista/sim_files/Taz/duaiterate/0_1/xmltocsv/{origin}_{destination}_summary_0.csv')
 #####################################################################################
 
-    
 random_df_1['Hour'] = range(24)
 random_df_1['RP'] = 1
-random_df_1['Routing'] = 'Random'
+random_df_1['Routing'] = 'RandomTrips'
 random_df_0['Hour'] = range(24)
 random_df_0['RP'] = 0
-random_df_0['Routing'] = 'Random'
-
+random_df_0['Routing'] = 'RandomTrips'
 
 taz_ma_df_0['Hour'] = range(24)
 taz_ma_df_0['RP'] = 0
-taz_ma_df_0['Routing'] = 'marouter'
+taz_ma_df_0['Routing'] = 'MArouter'
 taz_ma_df_1['Hour'] = range(24)
 taz_ma_df_1['RP'] = 1
-taz_ma_df_1['Routing'] = 'marouter'
+taz_ma_df_1['Routing'] = 'MArouter'
 
 taz_dua_df_0['Hour'] = range(24)
 taz_dua_df_0['RP'] = 0
-taz_dua_df_0['Routing'] = 'duarouter'
+taz_dua_df_0['Routing'] = 'DUArouter'
 taz_dua_df_1['Hour'] = range(24)
 taz_dua_df_1['RP'] = 1
-taz_dua_df_1['Routing'] = 'duarouter'
+taz_dua_df_1['Routing'] = 'DUArouter'
+
+taz_duaiter_df_0['Hour'] = range(24)
+taz_duaiter_df_0['RP'] = 0
+taz_duaiter_df_0['Routing'] = 'DUAIterate'
+taz_duaiter_df_1['Hour'] = range(24)
+taz_duaiter_df_1['RP'] = 1
+taz_duaiter_df_1['Routing'] = 'DUAIterate'
+
+taz_od2_df_0['Hour'] = range(24)
+taz_od2_df_0['RP'] = 0
+taz_od2_df_0['Routing'] = 'OD2Trips'
+taz_od2_df_1['Hour'] = range(24)
+taz_od2_df_1['RP'] = 1
+taz_od2_df_1['Routing'] = 'OD2Trips'
+
 
 # Merge csv files 0 / 1 / real
 # ma
@@ -106,9 +118,16 @@ parsed_ma_df = taz_ma_df_0.merge(taz_ma_df_1, on='Hour', suffixes=('_tazma0', '_
 parsed_dua_df = taz_dua_df_0.merge(taz_dua_df_1, on='Hour', suffixes=('_tazdua0', '_tazdua1'))
 # random 
 parsed_random_df = random_df_0.merge(random_df_1, on='Hour', suffixes=('_random0', '_random1'))
+#od2
+parsed_od2_df = taz_od2_df_0.merge(taz_od2_df_1, on='Hour', suffixes=('_od20', '_od21'))
+# duaiterate
+parsed_duaiter_df = taz_duaiter_df_0.merge(taz_duaiter_df_1, on='Hour', suffixes=('_tazduaiter0', '_tazduaiter1'))
+
 
 # ma / dua / random / real
-dfs = parsed_ma_df.merge(parsed_dua_df, on='Hour').merge(parsed_random_df, on='Hour').merge(traffic, on='Hour')
+dfs = parsed_ma_df.merge(parsed_dua_df, on='Hour').merge(parsed_random_df, on='Hour').merge(parsed_od2_df, on='Hour').merge(parsed_duaiter_df, on='Hour').merge(traffic, on='Hour')
+
+
 
 # Filter data
 traffic_df = dfs.filter(['Hour',
@@ -116,20 +135,28 @@ traffic_df = dfs.filter(['Hour',
                         'interval_vehicleSum_tazma1',
                         'interval_vehicleSum_tazdua0',
                         'interval_vehicleSum_tazdua1',
+                        'interval_vehicleSum_tazduaiter0',
+                        'interval_vehicleSum_tazduaiter1',
                         'interval_vehicleSum_random0',
                         'interval_vehicleSum_random1',
+                        'interval_vehicleSum_od20',
+                        'interval_vehicleSum_od21',
                         'Total'])
 
-traffic_df.rename(columns={'interval_vehicleSum_tazma0':'MANR',
-                           'interval_vehicleSum_tazma1':'MAR',
-                           'interval_vehicleSum_tazdua0':'DUANR',
-                           'interval_vehicleSum_tazdua1':'DUAR',
-                           'interval_vehicleSum_random0':'RNR',
-                           'interval_vehicleSum_random1':'RR',
+traffic_df.rename(columns={'interval_vehicleSum_tazma0':'MAR',
+                           'interval_vehicleSum_tazma1':'MAR-R',
+                           'interval_vehicleSum_tazdua0':'DUAR',
+                           'interval_vehicleSum_tazdua1':'DUAR-R',
+                           'interval_vehicleSum_tazduaiter0':'DUAI',
+                           'interval_vehicleSum_tazduaiter1':'DUAI-R',
+                           'interval_vehicleSum_random0':'RT',
+                           'interval_vehicleSum_random1':'RT-R',
+                           'interval_vehicleSum_od20':'OD2',
+                           'interval_vehicleSum_od21':'OD2-R',
                            'Total':'Real'},inplace=True)
 
 # sort traffic df
-df = pd.melt(traffic_df, id_vars=['Hour'], value_vars=['MANR', 'MAR', 'DUANR', 'DUAR', 'RNR', 'RR', 'Real'], 
+df = pd.melt(traffic_df, id_vars=['Hour'], value_vars=['MAR', 'MAR-R', 'DUAR', 'DUAR-R','DUAI', 'DUAI-R', 'RT', 'RT-R', 'OD2', 'OD2-R','Real'], 
              var_name='Routing',
              value_name='Traffic')
 
@@ -142,6 +169,10 @@ f_list = [taz_ma_traffic_metrics_df_0,
         taz_ma_traffic_metrics_df_1, 
         taz_dua_traffic_metrics_df_0, 
         taz_dua_traffic_metrics_df_1,
+        taz_duaiter_traffic_metrics_df_0, 
+        taz_duaiter_traffic_metrics_df_1,
+        taz_od2_traffic_metrics_df_0, 
+        taz_od2_traffic_metrics_df_1,
         random_traffic_metrics_df_0,
         random_traffic_metrics_df_1]
 
@@ -150,13 +181,16 @@ sum_list = [taz_ma_summary_df_0,
             taz_ma_summary_df_1, 
             taz_dua_summary_df_0, 
             taz_dua_summary_df_1,
+            taz_duaiter_summary_df_0, 
+            taz_duaiter_summary_df_1,
+            taz_od2_summary_df_0, 
+            taz_od2_summary_df_1,
             random_summary_df_0,
             random_summary_df_1]
 
 
-f_names = ['MANR', 'MAR', 'DUANR', 'DUAR', 'RNR', 'RR']
-markers=['x','o','+','^','s','v','s']
-
+f_names = ['MAR', 'MAR-R', 'DUAR', 'DUAR-R', 'DUAI', 'DUAI-R', 'OD2', 'OD2-R','RT', 'RT-R']
+markers=['+','s','o','^','x','v','D','.','<','>',',']
 
 
 
@@ -164,13 +198,15 @@ markers=['x','o','+','^','s','v','s']
 def plot_traffic():
     
     # traffic filtes
-    cols = ['MANR', 'MAR', 'DUANR', 'DUAR', 'RNR', 'RR', 'Real']
+    cols = ['MAR', 'MAR-R', 'DUAR', 'DUAR-R', 'DUAI', 'DUAI-R', 'RT', 'RT-R', 'OD2', 'OD2-R', 'Real']
   
     # plot traffic intensity
     fig, ax = plt.subplots(figsize=(6,4))
     new_df = traffic_df.copy()
     for i, col in enumerate(cols):
         if col =='Real':
+            # smoth
+            #f2 = interp1d(x='Hour', y=col, kind='cubic')
            
             new_df.rename(columns={'Real':'Workin day'}, inplace=True)
             col = 'Workin day'
@@ -193,9 +229,8 @@ def plot_traffic():
 def plot_routing_traffic():
     
     # traffic filtes
-    cols = ['MANR', 'DUANR', 'RNR', 'Real']
-    
-    #cols = ['MAR', 'DUAR', 'RR', 'Real']
+    cols = ['MAR', 'DUAR', 'DUAI', 'RT', 'OD2', 'Real']
+ 
      
     # box plot
     box_plt = traffic_df.filter(cols)
@@ -251,12 +286,16 @@ def fundamental_metrics():
         for y in range(p_y):    
             if i < len(cols):
                 metric = cols[i]
-                d_dic = {'MANR':taz_ma_traffic_metrics_df_0[f'{metric}'],
-                         'MAR':taz_ma_traffic_metrics_df_1[f'{metric}'],
-                         'DUANR':taz_dua_traffic_metrics_df_0[f'{metric}'],
-                         'DUAR':taz_dua_traffic_metrics_df_1[f'{metric}'],
-                         'RNR':random_traffic_metrics_df_0[f'{metric}'],
-                         'RR':random_traffic_metrics_df_1[f'{metric}']}
+                d_dic = {'MAR':taz_ma_traffic_metrics_df_0[f'{metric}'],
+                         'MAR-R':taz_ma_traffic_metrics_df_1[f'{metric}'],
+                         'DUAR':taz_dua_traffic_metrics_df_0[f'{metric}'],
+                         'DUAR-R':taz_dua_traffic_metrics_df_1[f'{metric}'],
+                         'DUAI':taz_dua_traffic_metrics_df_0[f'{metric}'],
+                         'DUAI-R':taz_dua_traffic_metrics_df_1[f'{metric}'],
+                         'OD2':taz_od2_traffic_metrics_df_0[f'{metric}'],
+                         'OD2-R':taz_od2_traffic_metrics_df_1[f'{metric}'],
+                         'RT':random_traffic_metrics_df_0[f'{metric}'],
+                         'RT-R':random_traffic_metrics_df_1[f'{metric}']}
                 df = pd.DataFrame(d_dic)
                 #df.mean().plot(kind='bar', color=mcolors.TABLEAU_COLORS, ax=axs[x,y])
                 df.mean().plot(kind='bar', ax=axs[x,y])
@@ -283,15 +322,20 @@ def fundamental_metrics_hist():
         for y in range(p_y):    
           if i < len(cols):
                 metric = cols[i]
-                d_dic = {'MANR':taz_ma_traffic_metrics_df_0[f'{metric}'],
-                         'MAR':taz_ma_traffic_metrics_df_1[f'{metric}'],
-                         'DUANR':taz_dua_traffic_metrics_df_0[f'{metric}'],
-                         'DUAR':taz_dua_traffic_metrics_df_1[f'{metric}'],
-                         'RNR':random_traffic_metrics_df_0[f'{metric}'],
-                         'RR':random_traffic_metrics_df_1[f'{metric}']
+                d_dic = {'MAR':taz_ma_traffic_metrics_df_0[f'{metric}'],
+                         'MAR-R':taz_ma_traffic_metrics_df_1[f'{metric}'],
+                         'DUAR':taz_dua_traffic_metrics_df_0[f'{metric}'],
+                         'DUAR-R':taz_dua_traffic_metrics_df_1[f'{metric}'],
+                         'DUAI':taz_dua_traffic_metrics_df_0[f'{metric}'],
+                         'DUAI-R':taz_dua_traffic_metrics_df_1[f'{metric}'],
+                         'OD2':taz_od2_traffic_metrics_df_0[f'{metric}'],
+                         'OD2-R':taz_od2_traffic_metrics_df_1[f'{metric}'],
+                         'RT':random_traffic_metrics_df_0[f'{metric}'],
+                         'RT-R':random_traffic_metrics_df_1[f'{metric}']
                          }
                 df = pd.DataFrame(d_dic)
-                df.plot.hist(n_bins, density=True, histtype='step', legend=False, stacked=False,  ax=axs[x,y])
+                #df.plot.hist(n_bins, density=True, histtype='step', legend=False, stacked=False, edgecolor='black', ax=axs[x,y])
+                df.plot.hist(n_bins, density=True, histtype='step', legend=False, stacked=False, ax=axs[x,y])
                 #axs[x,y].legend(prop={'size': 5})                
                 axs[x,y].set_title(f'Avrg. {metric}')
                 i+=1
@@ -306,13 +350,18 @@ def fundamental_metrics_hist():
 def summary_plot():
 
     # tag dfs
-    taz_ma_summary_df_0['Routing'] = 'MANR'
-    taz_ma_summary_df_1['Routing'] = 'MAR'
-    taz_dua_summary_df_0['Routing'] = 'DUANR'
-    taz_dua_summary_df_1['Routing'] = 'DUAR'
-    random_summary_df_0['Routing'] = 'RNR'
-    random_summary_df_1['Routing'] = 'RR'
-    #traffic = pd.read_csv('/root/Desktop/MSWIM/Revista/TrafficPgSanJoan.csv')
+    taz_ma_summary_df_0['Routing'] = 'MAR'
+    taz_ma_summary_df_1['Routing'] = 'MAR-R'
+    taz_dua_summary_df_0['Routing'] = 'DUAR'
+    taz_dua_summary_df_1['Routing'] = 'DUAR-R'
+    taz_duaiter_summary_df_0['Routing'] = 'DUAI'
+    taz_duaiter_summary_df_1['Routing'] = 'DUAI-R'
+    taz_od2_summary_df_0['Routing'] = 'OD2'
+    taz_od2_summary_df_1['Routing'] = 'OD2-R'
+    
+    random_summary_df_0['Routing'] = 'RT'
+    random_summary_df_1['Routing'] = 'RT-R'
+    
     traffic['Routing'] = 'Real'
     
     # filter cols   
@@ -325,7 +374,13 @@ def summary_plot():
     # plot step running vehicles
     fig, ax = plt.subplots(figsize=(6,4))
     traffic.plot(kind='line',x='Hour', y='Total', marker='.', label='Real', ax=ax)
-    for i, name in enumerate(f_names):
+    
+     # traffic filtes
+    f_names_temp = ['MAR', 'DUAR', 'DUAI', 'RT', 'OD2', 'Real']
+ 
+   
+    
+    for i, name in enumerate(f_names_temp):
         temp_df = df[df['Routing']==name]
         # group by hour mean nu,ber of vehicles
         temp_df = temp_df.groupby(pd.cut(temp_df["step_time"], np.arange(0, 1+24*3600,3600))).max()

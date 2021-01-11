@@ -70,6 +70,15 @@ def SUMO_preprocess(options):
         # Run sumo tool with sumo output file as input
         cmd = 'python {} {} -s , -o {}'.format(sumo_tool, os.path.join(options.sumofiles,f), output)
         os.system(cmd)
+        
+        """
+        # get emissions from tripinfo file
+        if 'emission' in f.split('_'):
+            emissions_df = emissions_tripinfo(os.path.join(options.sumofiles,f))
+            out_name = os.path.join(options.emissions,'emissions.csv')
+            emissions_df.to_csv(out_name, index=False, header=True)
+        """
+        
 
     def singlexml2csv(f, options):
         # output directory
@@ -78,6 +87,7 @@ def SUMO_preprocess(options):
         sumo_tool = os.path.join(tools, 'xml', 'xml2csv.py')
         # Run sumo tool with sumo output file as input
         cmd = 'python {} {} -s , -o {}'.format(sumo_tool, os.path.join(options.detector,f), output)
+       
         os.system(cmd)
 
 
@@ -137,7 +147,20 @@ def SUMO_preprocess(options):
         combined_csv.to_csv(os.path.join(options.parsed, "data.csv"), index=False, header=True)
         return combined_csv
                 
-     
+    
+    
+    def emissions_tripinfo(tripfile):
+        # Open original file
+        tree = ET.parse(tripfile)
+        root = tree.getroot()
+        tuple_values = []
+        # child -> timestep ! 
+        for i, child in enumerate(root.getchildren()):
+            tuple_values.append((child.get('time'), root[i][0].attrib['CO2'], root[i][0].attrib['x'], root[i][0].attrib['y']))
+        df = pd.DataFrame(tuple_values, columns =['Time', 'CO2', 'x', 'y']) 
+        return df
+        
+              
                 
     def veh_trip_info(df):
         # filter know features
@@ -166,6 +189,9 @@ def SUMO_preprocess(options):
         #taz_locations_edgenum_df = lanes_counter_taz_locations(vehroute)                  # Count edges on route from vehroute file and get from/to TAZ locations
         veh_speed_positions_df = avrg_speed_and_geo_positions(fcd)                        # Get average speed and initial/end positions (x,y)
         tripinfo_df = veh_trip_info(tripinfo) 
+        
+      
+        
         # merge dataframes
         #sdata = taz_locations_edgenum_df.merge(veh_speed_positions_df,on='ID').merge(tripinfo_df,on='ID')
         sdata = veh_speed_positions_df.merge(tripinfo_df,on='ID')
