@@ -8,6 +8,9 @@ import time
 import shutil
 from tqdm import tqdm
 from joblib import Parallel, delayed, parallel_backend
+import subprocess
+from utils import create_folder, cpu_mem_folders
+
 
 # import sumo tool xmltocsv
 os.environ['SUMO_HOME']='/opt/sumo-1.8.0'
@@ -17,7 +20,6 @@ from utils import SUMO_preprocess, parallel_batch_size, detector_cfg
 # number of cpus
 processors = multiprocessing.cpu_count() # due to memory lack -> Catalunya  map = 2GB
 
-    
 # General settings
 veh_num = 10  # number of vehicles in O file
 n_repetitions = 1 # number of repetitions 
@@ -30,21 +32,11 @@ rr_prob = 0
 # routing dua / ma
 routing = 'od2'
 
-
 # Informacion de origen / destino como aparece en TAZ file 
 origin_district = ['Hospitalet']
 destination_distric = ['SanAdria']
 
-
-def create_folder(path):
-    try:
-        if os.path.exists(path):
-            shutil.rmtree(path)
-            os.mkdir(path)
-        os.mkdir(path)
-    except OSError:
-        print ("Creation of the directory %s failed" % path)
-   
+ 
 # Static paths 
 sim_dir = '/root/Desktop/MSWIM/Revista/sim_files'   # directory of sumo cfg files
 base_dir =  os.path.join(sim_dir,'Taz',f'{routing}') # directorio base
@@ -64,6 +56,8 @@ create_folder(new_dir)
 folders = ['trips', 'O', 'dua', 'ma', 'cfg', 'outputs', 'detector', 'xmltocsv', 'parsed', 'reroute']
 [create_folder(os.path.join(new_dir, f)) for f in folders]
 
+# create folders for cpu mem check
+cpu, mem, disk = cpu_mem_folders(new_dir)
 
 # Static paths
 dua = os.path.join(new_dir, 'dua')
@@ -76,6 +70,8 @@ parsed = os.path.join(new_dir, 'parsed')
 reroute = os.path.join(new_dir, 'reroute')
 trips = os.path.join(new_dir, 'trips')
 ma = os.path.join(new_dir, 'ma')
+
+
 
 # Create detector file
 detector_dir = os.path.join(new_dir,'detector.add.xml')
@@ -99,6 +95,10 @@ class folders:
     O = O
     trips=trips 
     ma=ma
+    cpu=cpu
+    mem=mem
+    disk=disk
+    
     
 def clean_folder(folder):
     files = glob.glob(os.path.join(folder,'*'))
@@ -475,7 +475,20 @@ def SUMO_outputs_process():
     SUMO_preprocess(options)
       
         
-# Generate cfg files
+########################################################
+print('CPU/MEM/DISC check fix time.....')
+cmd = ['/root/disk.sh', f'{new_dir}', f'{folders.disk}']
+print(cmd)
+subprocess.Popen(cmd)
+#cpu mem scripts
+cmd = ['/root/cpu.sh', f'{folders.cpu}']
+subprocess.Popen(cmd)
+cmd = ['/root/memory.sh', f'{folders.mem}']
+subprocess.Popen(cmd)
+########################################################
+
+
+# Generate cfg files        
 od2_sim_cfg_file = gen_route_files()
 
 # Execute simulations
@@ -485,4 +498,4 @@ summary()
 simulate()     
 
 # Outputs preprocess
-SUMO_outputs_process()
+#SUMO_outputs_process()

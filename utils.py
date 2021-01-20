@@ -7,6 +7,7 @@ import time
 import multiprocessing
 import xml.etree.ElementTree as ET
 import psutil
+import shutil
 
 # import sumo tool xmltocsv
 os.environ['SUMO_HOME']='/opt/sumo-1.8.0'
@@ -51,7 +52,38 @@ def kill_cpu_pid():
            print(f'\nCPU pid={pid} killed')
            
        
+def create_folder(path):
+    try:
+        if os.path.exists(path):
+            shutil.rmtree(path)
+            os.mkdir(path)
+        os.mkdir(path)
+    except OSError:
+        print ("Creation of the directory %s failed" % path)
 
+
+# CPU
+def cpu_mem_folders(new_dir):
+    parent_path = os.path.join(new_dir, "CPU")
+    statistics_tool_Path = os.path.join(parent_path, 'statistics')
+    create_folder(parent_path)
+    create_folder(statistics_tool_Path)
+    tools = ['cpu', 'memory', 'disk']
+    # create tools subfolders
+    [create_folder(os.path.join(statistics_tool_Path, f)) for f in tools]
+    cpu_path = os.path.join(statistics_tool_Path, 'cpu')
+    mem_path = os.path.join(statistics_tool_Path, 'memory')
+    disk_path = os.path.join(statistics_tool_Path, 'disk')
+
+    # New paths
+    curr_subdir = os.path.join(parent_path, 'data')
+    create_folder(curr_subdir)
+    folders = ["cpu", 'memory', 'disk', 'results', 'plots']
+    [create_folder(os.path.join(curr_subdir, f)) for f in folders]
+    [create_folder(os.path.join(os.path.join(curr_subdir, 'results'), f)) for f in tools]
+
+    return cpu_path, mem_path, disk_path
+        
 
 def SUMO_preprocess(options):
     # Process SUMO output files to build the dataset

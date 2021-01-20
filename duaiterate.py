@@ -8,12 +8,13 @@ import time
 import shutil
 from tqdm import tqdm
 from joblib import Parallel, delayed, parallel_backend
+import subprocess
+
 
 # import sumo tool xmltocsv
 os.environ['SUMO_HOME']='/opt/sumo-1.8.0'
 
-from utils import SUMO_preprocess, parallel_batch_size, detector_cfg
-
+from utils import SUMO_preprocess, parallel_batch_size, detector_cfg, create_folder, cpu_mem_folders
 # number of cpus
 processors = multiprocessing.cpu_count() # due to memory lack -> Catalunya  map = 2GB
 
@@ -37,15 +38,7 @@ net_update = 600 #cada cuantos segundos se actualiza la network status triptimes
 origin_district = ['Hospitalet']
 destination_distric = ['SanAdria']
 
-def create_folder(path):
-    try:
-        if os.path.exists(path):
-            shutil.rmtree(path)
-            os.mkdir(path)
-        os.mkdir(path)
-    except OSError:
-        print ("Creation of the directory %s failed" % path)
-   
+ 
 # Static paths 
 sim_dir = '/root/Desktop/MSWIM/Revista/sim_files'   # directory of sumo cfg files
 base_dir =  os.path.join(sim_dir,'Taz',f'{routing}') # directorio base
@@ -65,6 +58,8 @@ create_folder(new_dir)
 folders = ['emissions','duaiterate','trips', 'O', 'dua', 'ma', 'cfg', 'outputs', 'detector', 'xmltocsv', 'parsed', 'reroute']
 [create_folder(os.path.join(new_dir, f)) for f in folders]
 
+# create folders for cpu mem check
+cpu, mem, disk = cpu_mem_folders(new_dir)
 
 # Static paths
 dua = os.path.join(new_dir, 'dua')
@@ -106,6 +101,10 @@ class folders:
     ma=ma
     duaiterate=duaiterate
     emissions = emissions
+    cpu=cpu
+    mem=mem
+    disk=disk
+    
     
 def clean_folder(folder):
     files = glob.glob(os.path.join(folder,'*'))
@@ -509,18 +508,23 @@ def SUMO_outputs_process():
         emissions = emissions
     SUMO_preprocess(options)
       
+
+########################################################
+print('CPU/MEM/DISC check fix time.....')
+cmd = ['/root/disk.sh', f'{new_dir}', f'{folders.disk}']
+print(cmd)
+subprocess.Popen(cmd)
+#cpu mem scripts
+cmd = ['/root/cpu.sh', f'{folders.cpu}']
+subprocess.Popen(cmd)
+cmd = ['/root/memory.sh', f'{folders.mem}']
+subprocess.Popen(cmd)
+########################################################
         
 # Generate cfg files
 via_trip = gen_route_files()
-
+# Exceute duaiterate
 exec_DUArouter(via_trip)
 
-"""
-# Execute simulations
-summary()
-
-# Exec simulations
-simulate()     
-"""
 # Outputs preprocess
-SUMO_outputs_process()
+#SUMO_outputs_process()

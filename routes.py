@@ -8,18 +8,19 @@ import time
 import shutil
 from tqdm import tqdm
 from joblib import Parallel, delayed, parallel_backend
+import subprocess
+
 
 # import sumo tool xmltocsv
 os.environ['SUMO_HOME']='/opt/sumo-1.8.0'
 
-from utils import SUMO_preprocess, parallel_batch_size, detector_cfg
+from utils import SUMO_preprocess, parallel_batch_size, detector_cfg, create_folder, cpu_mem_folders
 
 # number of cpus
 processors = multiprocessing.cpu_count() # due to memory lack -> Catalunya  map = 2GB
 
-    
 # General settings
-veh_num = 10  # number of vehicles in O file
+#veh_num = 10  # number of vehicles in O file
 n_repetitions = 1 # number of repetitions 
 k = 0
 sim_time = 24 # in hours # TO DO parameter of time in files
@@ -28,7 +29,7 @@ factor = 1.0 # multiplied by the number of vehicles
 # Vehicles equiped with a device Reroute probability
 rr_prob = 0
 # routing dua / ma
-routing = 'dua'
+routing = 'ma'
 
 
 # Informacion de origen / destino como aparece en TAZ file 
@@ -36,15 +37,6 @@ origin_district = ['Hospitalet']
 destination_distric = ['SanAdria']
 
 
-def create_folder(path):
-    try:
-        if os.path.exists(path):
-            shutil.rmtree(path)
-            os.mkdir(path)
-        os.mkdir(path)
-    except OSError:
-        print ("Creation of the directory %s failed" % path)
-   
 # Static paths 
 sim_dir = '/root/Desktop/MSWIM/Revista/sim_files'   # directory of sumo cfg files
 base_dir =  os.path.join(sim_dir,'Taz',f'{routing}') # directorio base
@@ -68,6 +60,8 @@ create_folder(new_dir)
 folders = ['emissions','trips', 'O', 'dua', 'ma', 'cfg', 'outputs', 'detector', 'xmltocsv', 'parsed', 'reroute']
 [create_folder(os.path.join(new_dir, f)) for f in folders]
 
+# create folders for cpu mem check
+cpu, mem, disk = cpu_mem_folders(new_dir)
 
 # Static paths
 dua = os.path.join(new_dir, 'dua')
@@ -105,6 +99,9 @@ class folders:
     trips=trips 
     ma=ma
     emissions = emissions
+    cpu=cpu
+    mem=mem
+    disk=disk
     
 def clean_folder(folder):
     files = glob.glob(os.path.join(folder,'*'))
@@ -153,7 +150,7 @@ def gen_route_files():
             
             # build O file    
             O_name = os.path.join(folders.O, f'{h}_{sd}')
-            create_O_file(O_name, f'{h}', f'{sd}', veh_num)
+            create_O_file(O_name, f'{h}', f'{sd}')
             
             # Generate cfg files 
             for k in tqdm(range(n_repetitions)):
@@ -166,7 +163,7 @@ def gen_route_files():
 
     
 
-def create_O_file(fname, origin_district, destination_distric, vehicles):
+def create_O_file(fname, origin_district, destination_distric):
     #create 24 hour files
     traffic = pd.read_csv('/root/Desktop/MSWIM/Revista/TrafficPgSanJoan.csv')
  
@@ -232,7 +229,7 @@ def gen_MArouter(O, i, O_files, trips):
     ET.SubElement(parent, 'od-matrix-files').set('value', f'{O_listToStr}')    
   
     # update additionals 
-    add_list = [TAZ,vtype]
+    add_list = [TAZ]
     additionals = ','.join([elem for elem in add_list]) 
     
     # Update detector
@@ -295,6 +292,12 @@ def gen_od2trips(O,k):
     ET.SubElement(parent, 'od-matrix-files').set('value', f'{O_listToStr}')    
     ET.SubElement(parent, 'taz-files').set('value', f'{TAZ}')    
     
+    #additionals
+    #add_list = [vtype]
+    #additionals = ','.join([elem for elem in add_list]) 
+    #ET.SubElement(parent, 'additional-files').set('value', f'{additionals}')    
+
+      
     # Update output
     parent = tree.find('output')
     output_name = f'{O}_od2_{k}.trip.xml'
@@ -320,7 +323,7 @@ def gen_sumo_cfg(routing,dua, k):
     
     
     if routing =='dua':
-        add_list = [detector_dir]
+        add_list = [detector_dir, vtype]
     else:    
         add_list = [TAZ, detector_dir, vtype]
     
@@ -501,6 +504,17 @@ else:
     # Execute DUArouter 
     exec_MArouter()
 
+########################################################
+print('CPU/MEM/DISC check fix time.....')
+cmd = ['/root/disk.sh', f'{new_dir}', f'{folders.disk}']
+print(cmd)
+subprocess.Popen(cmd)
+#cpu mem scripts
+cmd = ['/root/cpu.sh', f'{folders.cpu}']
+subprocess.Popen(cmd)
+cmd = ['/root/memory.sh', f'{folders.mem}']
+subprocess.Popen(cmd)
+########################################################
 
 # Execute simulations
 summary()
@@ -509,4 +523,4 @@ summary()
 simulate()     
 
 # Outputs preprocess
-SUMO_outputs_process()
+#SUMO_outputs_process()

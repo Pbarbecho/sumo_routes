@@ -6,7 +6,7 @@ import pandas as pd
 from tqdm import tqdm
 import shutil
 import subprocess
-from utils import SUMO_preprocess, detector_cfg, kill_cpu_pid
+from utils import SUMO_preprocess, detector_cfg, kill_cpu_pid, create_folder, cpu_mem_folders
 
 # number of cpus
 processors = multiprocessing.cpu_count() # due to memory lack -> Catalunya  map = 2GB
@@ -33,17 +33,6 @@ rr_prob = 0
 # Informacion de origen / destino como aparece en TAZ file 
 origin_district = ['Hospitalet']
 destination_distric = ['SanAdria']
-
-
-def create_folder(path):
-    try:
-        if os.path.exists(path):
-            shutil.rmtree(path)
-            os.mkdir(path)
-        os.mkdir(path)
-    except OSError:
-        print ("Creation of the directory %s failed" % path)
-    
 
 # Static paths 
 sim_dir = '/root/Desktop/MSWIM/Revista/sim_files'   # directory of sumo cfg files
@@ -80,9 +69,13 @@ cpu = os.path.join(new_dir, 'CPU')
 detector_dir = os.path.join(new_dir,'detector.add.xml')
 detector_cfg(os.path.join(sim_dir,'templates', 'detector.add.xml'),detector_dir, os.path.join(detector, 'detector.xml')) 
 
+# create folders for cpu mem check
+cpu, mem, disk = cpu_mem_folders(new_dir)
+
 
 # Custom routes via
 route_0 = '237659862#23 208568871#3 208568871#4 208568871#5'
+#route_0 = '208568871#5'
 
 
 class folders:
@@ -96,7 +89,9 @@ class folders:
     cpu = cpu
     parsed = parsed
     reroute = reroute
-    
+    cpu=cpu
+    mem=mem
+    disk=disk
     
     
 def clean_folder(folder):
@@ -112,7 +107,7 @@ def RandomTrips():
         # output directory
         output = os.path.join(folders.random_dir,  f'{fname}.xml')
           
-        vtype = "passenger"
+        vtype = "car"
         
         begin = ini_time
         end =  begin + 15*60  # 15 minutes 
@@ -124,14 +119,14 @@ def RandomTrips():
         cmd = f"python {sumo_tool} \
             -n {net_file} \
             -a {add_file}  \
+            --edge-permission passenger  \
             -b {begin} -e {end} -p {period} \
             --trip-attributes 'type=\"{vtype}\" departSpeed=\"0\"' \
-            --edge-permission passenger  \
             -s {seed}  \
             -o {output}"
         os.system(cmd)
     #--validate \
-    
+    #--edge-permission {vtype}  \
     def custom_routes():
         randomtrips = os.listdir(folders.random_dir)
         
@@ -162,7 +157,7 @@ def RandomTrips():
         print('CPU MEM check fix time.....')
         
         #cpu script
-        subprocess.Popen(['/root/cpu_mem_check.sh', f'{folders.cpu}'])
+        #subprocess.Popen(['/root/cpu_mem_check.sh', f'{folders.cpu}'])
         
         print(f'\nGenerating {len(col) * end_hour} randomTrips ......')
         for hour in range(end_hour):  #hora
@@ -173,7 +168,7 @@ def RandomTrips():
                 ini_time = hour*3600 + (int(minute)) * 60
                 exec_randomTrips(name, ini_time, vehicles)
         
-        kill_cpu_pid()
+        #kill_cpu_pid()
         # verify generated trip files
         if len(os.listdir(folders.random_dir)) == len(col)*end_hour:
             print('OK')
@@ -298,8 +293,11 @@ def RandomTrips():
         # SUMO tool xml into csv
         sumo_tool = os.path.join(tools, 'xml', 'xml2csv.py')
         # Run sumo tool with sumo output file as input
+        
+        print('\nConvert to csv detector ! \nExecute outside...........\n')
         cmd = 'python {} {} -s , -o {}'.format(sumo_tool, os.path.join(folders.detector,f), output)
-        os.system(cmd)
+        print(cmd)
+        #os.system(cmd)
     
     def SUMO_outputs_process():
         class options:
@@ -310,7 +308,18 @@ def RandomTrips():
         SUMO_preprocess(options) 
         
   
-   
+    ########################################################
+    print('CPU/MEM/DISC check fix time.....')
+    cmd = ['/root/disk.sh', f'{new_dir}', f'{folders.disk}']
+    print(cmd)
+    subprocess.Popen(cmd)
+    #cpu mem scripts
+    cmd = ['/root/cpu.sh', f'{folders.cpu}']
+    subprocess.Popen(cmd)
+    cmd = ['/root/memory.sh', f'{folders.mem}']
+    subprocess.Popen(cmd)
+    ########################################################
+
     # trips
     trips_for_traffic()
     # via route Travessera
@@ -327,10 +336,10 @@ def RandomTrips():
     cfg_full_name = gen_sumo_cfg()
     exec_sumo_sim(cfg_full_name)
     # detectors
-    singlexml2csv('detector.xml')
+    #singlexml2csv('detector.xml')
     
     # process sumo outputs  
-    SUMO_outputs_process() 
+    #SUMO_outputs_process() 
     
 
 RandomTrips()
