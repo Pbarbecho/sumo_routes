@@ -508,16 +508,16 @@ def SUMO_outputs_process():
         emissions = emissions
     SUMO_preprocess(options)
       
-
+"""
 ########################################################
 print('CPU/MEM/DISC check fix time.....')
-cmd = ['/root/disk.sh', f'{new_dir}', f'{folders.disk}']
+cmd = ['/root/CPU/disk.sh', f'{new_dir}', f'{folders.disk}']
 print(cmd)
 subprocess.Popen(cmd)
 #cpu mem scripts
-cmd = ['/root/cpu.sh', f'{folders.cpu}']
+cmd = ['/root/CPU/cpu.sh', f'{folders.cpu}']
 subprocess.Popen(cmd)
-cmd = ['/root/memory.sh', f'{folders.mem}']
+cmd = ['/root/CPU/memory.sh', f'{folders.mem}']
 subprocess.Popen(cmd)
 ########################################################
         
@@ -525,6 +525,6 @@ subprocess.Popen(cmd)
 via_trip = gen_route_files()
 # Exceute duaiterate
 exec_DUArouter(via_trip)
-
+"""
 # Outputs preprocess
-#SUMO_outputs_process()
+SUMO_outputs_process()

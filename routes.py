@@ -29,7 +29,7 @@ factor = 1.0 # multiplied by the number of vehicles
 # Vehicles equiped with a device Reroute probability
 rr_prob = 0
 # routing dua / ma
-routing = 'ma'
+routing = 'dua'
 
 
 # Informacion de origen / destino como aparece en TAZ file 
@@ -494,6 +494,20 @@ def SUMO_outputs_process():
     SUMO_preprocess(options)
       
         
+      
+
+########################################################
+print('CPU/MEM/DISC check fix time.....')
+cmd = ['/root/CPU/disk.sh', f'{new_dir}', f'{folders.disk}']
+print(cmd)
+subprocess.Popen(cmd)
+#cpu mem scripts
+cmd = ['/root/CPU/cpu.sh', f'{folders.cpu}']
+subprocess.Popen(cmd)
+cmd = ['/root/CPU/memory.sh', f'{folders.mem}']
+subprocess.Popen(cmd)
+########################################################
+        
 # Generate cfg files
 gen_route_files()
 
@@ -504,17 +518,6 @@ else:
     # Execute DUArouter 
     exec_MArouter()
 
-########################################################
-print('CPU/MEM/DISC check fix time.....')
-cmd = ['/root/disk.sh', f'{new_dir}', f'{folders.disk}']
-print(cmd)
-subprocess.Popen(cmd)
-#cpu mem scripts
-cmd = ['/root/cpu.sh', f'{folders.cpu}']
-subprocess.Popen(cmd)
-cmd = ['/root/memory.sh', f'{folders.mem}']
-subprocess.Popen(cmd)
-########################################################
 
 # Execute simulations
 summary()

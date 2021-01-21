@@ -1,8 +1,0 @@
-<additional>
-<!-- <inductionLoop id="PgSantJoan" lane="208568871#5_0" pos="12" freq="10" file="/root/Desktop/MSWIM/Revista/outputs/detector.xml"/> -->
-      <e3Detector id="e3_cluster_126803340_4870404266_208568871#5" freq="3600" file="/root/Desktop/MSWIM/Revista/detector/Hospitalet_PgSanJoan_detector_0.xml">
-        <detEntry lane="208568871#5_0" pos="0.10"/>
-        <detExit lane="208568871#5_0" pos="-.1"/>
-    </e3Detector>
-  
-</additional>
