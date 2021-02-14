@@ -7,6 +7,7 @@ import numpy as np
 import time
 import shutil
 from tqdm import tqdm
+from datetime import datetime
 from joblib import Parallel, delayed, parallel_backend
 import subprocess
 
@@ -507,8 +508,12 @@ def SUMO_outputs_process():
         detector = detector
         emissions = emissions
     SUMO_preprocess(options)
-      
-"""
+
+def print_time(process_name):      
+    now = datetime.now()
+    current_time = now.strftime("%H:%M:%S")
+    print(f"{process_name} Time =", current_time)
+
 ########################################################
 print('CPU/MEM/DISC check fix time.....')
 cmd = ['/root/CPU/disk.sh', f'{new_dir}', f'{folders.disk}']
@@ -522,9 +527,12 @@ subprocess.Popen(cmd)
 ########################################################
         
 # Generate cfg files
+print_time('Cfg files generation')
 via_trip = gen_route_files()
 # Exceute duaiterate
+print_time('Begin simulation')
 exec_DUArouter(via_trip)
-"""
+print_time('End simulation')
+
 # Outputs preprocess
 SUMO_outputs_process()

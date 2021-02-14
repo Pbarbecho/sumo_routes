@@ -5,6 +5,7 @@ import sumolib
 import pandas as pd
 import numpy as np
 import time
+from datetime import datetime
 import shutil
 from tqdm import tqdm
 from joblib import Parallel, delayed, parallel_backend
@@ -455,7 +456,7 @@ def simulate():
         print(f'\n{len(os.listdir(folders.outputs))} outputs generated: {folders.outputs}')
     else:
        sys.exit('No sumo.cfg files}')
-  
+    print_time('End simulations ')
                 
        
 def exec_sim_cmd(cfg_file):
@@ -474,7 +475,12 @@ def SUMO_outputs_process():
         detector = detector
     SUMO_preprocess(options)
       
-        
+def print_time(process_name):
+    now = datetime.now()
+    current_time = now.strftime("%H:%M:%S")
+    print(f"\n{process_name} Time =", current_time)
+       
+
 ########################################################
 print('CPU/MEM/DISC check fix time.....')
 cmd = ['/root/CPU/disk.sh', f'{new_dir}', f'{folders.disk}']
@@ -489,13 +495,15 @@ subprocess.Popen(cmd)
 
 
 # Generate cfg files        
+print_time('Begin cfg files generation ')
 od2_sim_cfg_file = gen_route_files()
 
 # Execute simulations
-summary()
+#summary()
 
 # Exec simulations
+print_time('Begin simulation ')
 simulate()     
 
 # Outputs preprocess
-#SUMO_outputs_process()
+SUMO_outputs_process()

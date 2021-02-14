@@ -4,6 +4,7 @@ import xml.etree.ElementTree as ET
 import multiprocessing
 import pandas as pd
 from tqdm import tqdm
+from datetime import datetime
 import shutil
 import subprocess
 from utils import SUMO_preprocess, detector_cfg, kill_cpu_pid, create_folder, cpu_mem_folders
@@ -21,6 +22,7 @@ else:
     sys.exit("please declare environment variable 'SUMO_HOME'")
     
 
+ERASE_FOLDERS = False
     
 # General settings
 end_hour = 24
@@ -48,9 +50,10 @@ add_file = os.path.join(sim_dir,'templates', 'vtype.xml')
 
         
 # New paths
-create_folder(new_dir)  
-folders = ['CPU', 'trips', 'dua', 'cfg', 'outputs', 'detector', 'xmltocsv', 'parsed', 'reroute']
-[create_folder(os.path.join(new_dir, f)) for f in folders]
+if ERASE_FOLDERS:
+    create_folder(new_dir)  
+    folders = ['CPU', 'trips', 'dua', 'cfg', 'outputs', 'detector', 'xmltocsv', 'parsed', 'reroute']
+    [create_folder(os.path.join(new_dir, f)) for f in folders]
 
 
 # Static paths
@@ -66,9 +69,9 @@ cpu = os.path.join(new_dir, 'CPU')
  
 
 # Create detector file
-detector_dir = os.path.join(new_dir,'detector.add.xml')
-detector_cfg(os.path.join(sim_dir,'templates', 'detector.add.xml'),detector_dir, os.path.join(detector, 'detector.xml')) 
-
+if ERASE_FOLDERS:
+    detector_dir = os.path.join(new_dir,'detector.add.xml')
+    detector_cfg(os.path.join(sim_dir,'templates', 'detector.add.xml'),detector_dir, os.path.join(detector, 'detector.xml')) 
 # create folders for cpu mem check
 cpu, mem, disk = cpu_mem_folders(new_dir)
 
@@ -285,6 +288,7 @@ def RandomTrips():
         print('\nSimulating ......')
         cmd = f'sumo -c {cfg_full_name}'
         os.system(cmd)
+	
 
 
     def singlexml2csv(f):
@@ -305,41 +309,51 @@ def RandomTrips():
             xmltocsv = csv
             parsed = parsed
             detector = detector
-        SUMO_preprocess(options) 
-        
-  
-    ########################################################
-    print('CPU/MEM/DISC check fix time.....')
-    cmd = ['/root/CPU/disk.sh', f'{new_dir}', f'{folders.disk}']
-    print(cmd)
-    subprocess.Popen(cmd)
-    #cpu mem scripts
-    cmd = ['/root/CPU/cpu.sh', f'{folders.cpu}']
-    subprocess.Popen(cmd)
-    cmd = ['/root/CPU/memory.sh', f'{folders.mem}']
-    subprocess.Popen(cmd)
-    ########################################################
+        SUMO_preprocess(options)
 
-    # trips
-    trips_for_traffic()
-    # via route Travessera
-    custom_routes()
-    update_vehicle_ID()
+
+    def print_time(process_time):
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S")
+        print(f"\n{process_time} Time =", current_time)
+
     
-    """
-    # dua routes
-    gen_DUArouter()
-    exec_duarouter_cmd(os.path.join(folders.config, 'duarouter.cfg.xml'))
+    if ERASE_FOLDERS:
+        ########################################################
+        print('CPU/MEM/DISC check fix time.....')
+        cmd = ['/root/CPU/disk.sh', f'{new_dir}', f'{folders.disk}']
+        print(cmd)
+        subprocess.Popen(cmd)
+        #cpu mem scripts
+        cmd = ['/root/CPU/cpu.sh', f'{folders.cpu}']
+        subprocess.Popen(cmd)
+        cmd = ['/root/CPU/memory.sh', f'{folders.mem}']
+        subprocess.Popen(cmd)
+        ########################################################
     
-    """
-    # sumo sim
-    cfg_full_name = gen_sumo_cfg()
-    exec_sumo_sim(cfg_full_name)
-    # detectors
-    #singlexml2csv('detector.xml')
-    
+        # trips
+        print_time('Cfg files generation')
+        trips_for_traffic()
+        # via route Travessera
+        custom_routes()
+        update_vehicle_ID()
+        
+        """
+        # dua routes
+        gen_DUArouter()
+        exec_duarouter_cmd(os.path.join(folders.config, 'duarouter.cfg.xml'))
+        
+        """
+        # sumo sim
+        cfg_full_name = gen_sumo_cfg()
+        print_time('Begin simulation')
+        exec_sumo_sim(cfg_full_name)
+        print_time('End simulation')
+        # detectors
+        #singlexml2csv('detector.xml')
+        
     # process sumo outputs  
-    #SUMO_outputs_process() 
+    SUMO_outputs_process() 
     
 
 RandomTrips()

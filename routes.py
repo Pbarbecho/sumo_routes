@@ -8,6 +8,7 @@ import time
 import shutil
 from tqdm import tqdm
 from joblib import Parallel, delayed, parallel_backend
+from datetime import datetime
 import subprocess
 
 
@@ -29,7 +30,7 @@ factor = 1.0 # multiplied by the number of vehicles
 # Vehicles equiped with a device Reroute probability
 rr_prob = 0
 # routing dua / ma
-routing = 'dua'
+routing = 'ma'
 
 
 # Informacion de origen / destino como aparece en TAZ file 
@@ -495,7 +496,12 @@ def SUMO_outputs_process():
       
         
       
+def print_time(process_name):
+    now = datetime.now()
+    current_time = now.strftime("%H:%M:%S")
+    print(f"{process_name} Time =", current_time)
 
+"""
 ########################################################
 print('CPU/MEM/DISC check fix time.....')
 cmd = ['/root/CPU/disk.sh', f'{new_dir}', f'{folders.disk}']
@@ -507,8 +513,9 @@ subprocess.Popen(cmd)
 cmd = ['/root/CPU/memory.sh', f'{folders.mem}']
 subprocess.Popen(cmd)
 ########################################################
-        
+"""        
 # Generate cfg files
+print_time('Cfg files generation')
 gen_route_files()
 
 if routing  == 'dua':
@@ -520,10 +527,12 @@ else:
 
 
 # Execute simulations
-summary()
+#summary()
 
 # Exec simulations
+print_time('Begin simulation')
 simulate()     
+print_time('End simulation')
 
 # Outputs preprocess
-#SUMO_outputs_process()
+SUMO_outputs_process()

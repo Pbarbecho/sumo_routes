@@ -246,8 +246,20 @@ def plot_routing_traffic():
     fig, ax = plt.subplots(figsize=(6,4))
     for i, col in enumerate(cols):
         traffic_df.plot(kind='line',x='Hour',y=col, marker=markers[i], ax=ax)
+    
+        if col == "Real":
+            ymax = traffic_df['Real'].max() 
+            xmax = traffic_df.loc[traffic_df['Real'] == ymax, 'Hour']
+            plt.axhline(ymax, color='tab:orange')
+            style = dict(size=10, color='black')
+            margin = 10
+            ax.text(xmax,ymax+margin, "Peak hour", **style)
+            
+    
+    
+    
     plt.ylabel('# of vehicles')
-    plt.title('Traffic intensity')
+    #plt.title('Traffic intensity')
     plt.xticks(np.arange(min(traffic_df['Hour']), max(traffic_df['Hour'])+1, 2.0))
     plt.grid(True, linewidth=1, linestyle='--')  
     
@@ -371,16 +383,17 @@ def summary_plot():
     df = df.filter(cols)
    
     
-    # plot step running vehicles
-    fig, ax = plt.subplots(figsize=(6,4))
-    traffic.plot(kind='line',x='Hour', y='Total', marker='.', label='Real', ax=ax)
     
      # traffic filtes
-    f_names_temp = ['MAR', 'DUAR', 'DUAI', 'RT', 'OD2', 'Real']
+    f_names_temp = ['MAR', 'DUAR', 'DUAI', 'RT', 'OD2'] # real va luego
  
-   
+    # plot step running vehicles
+    fig, ax = plt.subplots(figsize=(6,4))
+    
     
     for i, name in enumerate(f_names_temp):
+        print(name)
+        
         temp_df = df[df['Routing']==name]
         # group by hour mean nu,ber of vehicles
         temp_df = temp_df.groupby(pd.cut(temp_df["step_time"], np.arange(0, 1+24*3600,3600))).max()
@@ -389,11 +402,15 @@ def summary_plot():
         temp_df['shift'] = temp_df['step_inserted'].shift().fillna(0)
         temp_df['vehicles'] = temp_df['step_inserted'] - temp_df['shift'] 
         # plot veh/hour
-        temp_df.plot(kind='line',x='Hour', y='vehicles', marker=markers[i], label=name, ax=ax)
         
+        temp_df.plot(kind='line',x='Hour', y='vehicles', marker=markers[i], label=name, ax=ax)
+    
+    traffic.plot(kind='line',x='Hour', y='Total', marker='v', label='Real', ax=ax)
+  
+    
     plt.ylabel('# of vehicles')
     plt.xlabel('Hour')
-    plt.title('Traffic intensity')
+    #plt.title('Traffic intensity')
     plt.xticks(np.arange(min(traffic_df['Hour']), max(traffic['Hour'])+1, 2.0))
     plt.grid(True, linewidth=1, linestyle='--')    
     
