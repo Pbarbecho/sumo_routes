@@ -87,6 +87,8 @@ detector_cfg(os.path.join(sim_dir,'templates', 'detector.add.xml'),detector_dir,
 route_0 = '208568871#5'
 
 
+new_emissions = '/root/Desktop/MSWIM/Revista/sim_files/templates/emissions.add.xml'
+
 class folders:
     traffic = traffic
     dua = dua
@@ -116,16 +118,19 @@ def gen_routes(O, k, O_files):
     cfg_name, output_name = gen_od2trips(O,k)
     
     # Execute od2trips
-    exec_od2trips(cfg_name)
+    output_name = exec_od2trips(cfg_name, output_name)
     
     # Custom route via='edges'
-    via_trip = custom_routes(output_name, k)
+    #via_trip = custom_routes(output_name, k)
    
     
     if routing == 'dua':
     
         # Generate DUArouter cfg
-        cfg_name, output_name = gen_DUArouter(via_trip, k)
+        #cfg_name, output_name = gen_DUArouter(via_trip, k)
+        cfg_name, output_name = gen_DUArouter(output_name, k)
+      
+      
       
         # Generate sumo cfg
         gen_sumo_cfg('dua', output_name, k)
@@ -133,8 +138,10 @@ def gen_routes(O, k, O_files):
               
     elif routing == 'ma':
         # Generate MArouter cfg
-        cfg_name, output_name = gen_MArouter(O, k, O_files, via_trip)
-            
+        #cfg_name, output_name = gen_MArouter(O, k, O_files, via_trip)
+        cfg_name, output_name = gen_MArouter(O, k, O_files, output_name)
+        
+        
         # Generate sumo cfg
         gen_sumo_cfg('marouter', output_name, k)
     else:
@@ -324,9 +331,9 @@ def gen_sumo_cfg(routing,dua, k):
     
     
     if routing =='dua':
-        add_list = [detector_dir, vtype]
+        add_list = [detector_dir, vtype, new_emissions]
     else:    
-        add_list = [TAZ, detector_dir, vtype]
+        add_list = [TAZ, detector_dir, vtype, new_emissions]
     
     additionals = ','.join([elem for elem in add_list]) 
     
@@ -356,12 +363,17 @@ def gen_sumo_cfg(routing,dua, k):
     
     
     
-def exec_od2trips(fname):
-    print('\nSimulando .......')
+def exec_od2trips(fname, tripfile):
+    print('\nRouting .......')
     cmd = f'od2trips -c {fname}'
     os.system(cmd)
-
-
+    # remove fromtotaz
+    output_file = f'{tripfile}.xml'
+    rm_taz = f"sed 's/fromTaz=\"Hospitalet\" toTaz=\"SanAdria\"//' {tripfile} > {output_file}"
+    os.system(rm_taz)
+    return output_file
+    
+    
 def exec_duarouter_cmd(fname):
     print('\nSimulando .......')
     cmd = f'duarouter -c {fname}'

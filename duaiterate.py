@@ -31,7 +31,7 @@ factor = 1.0 # multiplied by the number of vehicles
 rr_prob = 0
 # routing dua / ma
 routing = 'duaiterate'
-iterations = 2
+iterations = 4
 net_update = 600 #cada cuantos segundos se actualiza la network status triptimes defailt 900
 
 
@@ -119,7 +119,7 @@ def gen_routes(O, k, O_files):
     cfg_name, output_name = gen_od2trips(O,k)
     
     # Execute od2trips
-    exec_od2trips(cfg_name)
+    output_name = exec_od2trips(cfg_name, output_name)
     
     # Custom route via='edges'
     via_trip = custom_routes(output_name, k)
@@ -129,6 +129,7 @@ def gen_routes(O, k, O_files):
     
         # Generate DUArouter cfg
         cfg_name, output_name = gen_DUArouter(via_trip, k)
+        #cfg_name, output_name = gen_DUArouter(output_name, k)
       
         # Generate sumo cfg
         gen_sumo_cfg('dua', output_name, k)
@@ -138,6 +139,7 @@ def gen_routes(O, k, O_files):
         SystemExit('Routing not found')
             
     return via_trip 
+    #return output_name 
         
 
         
@@ -349,10 +351,17 @@ def gen_sumo_cfg(routing,dua, k):
     
     
     
-def exec_od2trips(fname):
-    print('\nSimulando .......')
+def exec_od2trips(fname, tripfile):
+    print('\nRouting .......')
     cmd = f'od2trips -c {fname}'
     os.system(cmd)
+    # remove fromtotaz
+    output_file = f'{tripfile}.xml'
+    rm_taz = f"sed 's/fromTaz=\"Hospitalet\" toTaz=\"SanAdria\"//' {tripfile} > {output_file}"
+    os.system(rm_taz)
+    return output_file
+    
+    
 
 
 def exec_duarouter_cmd(fname):
@@ -514,6 +523,7 @@ def print_time(process_name):
     current_time = now.strftime("%H:%M:%S")
     print(f"{process_name} Time =", current_time)
 
+"""
 ########################################################
 print('CPU/MEM/DISC check fix time.....')
 cmd = ['/root/CPU/disk.sh', f'{new_dir}', f'{folders.disk}']
@@ -525,7 +535,7 @@ subprocess.Popen(cmd)
 cmd = ['/root/CPU/memory.sh', f'{folders.mem}']
 subprocess.Popen(cmd)
 ########################################################
-        
+"""        
 # Generate cfg files
 print_time('Cfg files generation')
 via_trip = gen_route_files()

@@ -72,8 +72,6 @@ reroute = os.path.join(new_dir, 'reroute')
 trips = os.path.join(new_dir, 'trips')
 ma = os.path.join(new_dir, 'ma')
 
-
-
 # Create detector file
 detector_dir = os.path.join(new_dir,'detector.add.xml')
 detector_cfg(os.path.join(sim_dir,'templates', 'detector.add.xml'),detector_dir, os.path.join(detector, 'detector.xml')) 
@@ -81,8 +79,9 @@ detector_cfg(os.path.join(sim_dir,'templates', 'detector.add.xml'),detector_dir,
 
 # Custom routes via
 #route_0 = '237659862#23 208568871#3 208568871#4 208568871#5'
-route_0 = '208568871#5'
-
+#route_0 = '208568871#5'
+route_0 = '20476283#0'
+new_emissions = '/root/Desktop/MSWIM/Revista/sim_files/templates/emissions.add.xml'
 
 class folders:
     traffic = traffic
@@ -99,7 +98,7 @@ class folders:
     cpu=cpu
     mem=mem
     disk=disk
-    
+  
     
 def clean_folder(folder):
     files = glob.glob(os.path.join(folder,'*'))
@@ -113,17 +112,20 @@ def gen_routes(O, k, O_files):
     cfg_name, output_name = gen_od2trips(O,k)
     
     # Execute od2trips
-    exec_od2trips(cfg_name)
+    output_name = exec_od2trips(cfg_name, output_name)
     
     # Custom route via='edges'
     via_trip = custom_routes(output_name, k)
    
     
     # Generate sumo cfg
+    
     # via
-    od2_sim_cfg_file = gen_sumo_cfg('od2trips', via_trip, k)
+    #od2_sim_cfg_file = gen_sumo_cfg('od2trips', via_trip, k)
+    
     # no via
-    #od2_sim_cfg_file = gen_sumo_cfg('od2trips', output_name, k)
+    od2_sim_cfg_file = gen_sumo_cfg('od2trips', output_name, k)
+    
     return od2_sim_cfg_file
         
         
@@ -290,6 +292,7 @@ def gen_od2trips(O,k):
     # Write xml
     cfg_name = f'{O}_trips_{k}.cfg.xml'
     tree.write(cfg_name)
+    
     return cfg_name, output_name    
 
 
@@ -305,7 +308,7 @@ def gen_sumo_cfg(routing, dua, k):
     if routing =='dua':
         add_list = [detector_dir]
     else:    
-        add_list = [TAZ, detector_dir, vtype]
+        add_list = [TAZ, detector_dir, vtype, new_emissions]
     
     additionals = ','.join([elem for elem in add_list]) 
     
@@ -337,10 +340,17 @@ def gen_sumo_cfg(routing, dua, k):
     
     
     
-def exec_od2trips(fname):
+def exec_od2trips(fname, tripfile):
     print('\nRouting .......')
     cmd = f'od2trips -c {fname}'
     os.system(cmd)
+    # remove fromtotaz
+    output_file = f'{tripfile}.xml'
+    rm_taz = f"sed 's/fromTaz=\"Hospitalet\" toTaz=\"SanAdria\"//' {tripfile} > {output_file}"
+    os.system(rm_taz)
+    return output_file
+    
+    
 
 
 def exec_duarouter_cmd(fname):
@@ -480,7 +490,7 @@ def print_time(process_name):
     current_time = now.strftime("%H:%M:%S")
     print(f"\n{process_name} Time =", current_time)
        
-
+"""
 ########################################################
 print('CPU/MEM/DISC check fix time.....')
 cmd = ['/root/CPU/disk.sh', f'{new_dir}', f'{folders.disk}']
@@ -493,7 +503,7 @@ cmd = ['/root/CPU/memory.sh', f'{folders.mem}']
 subprocess.Popen(cmd)
 ########################################################
 
-
+"""
 # Generate cfg files        
 print_time('Begin cfg files generation ')
 od2_sim_cfg_file = gen_route_files()

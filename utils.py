@@ -62,6 +62,77 @@ def create_folder(path):
         print ("Creation of the directory %s failed" % path)
 
 
+
+def merge_detector_lanes(dtor_df, tool, routing):
+    # dataframe, routing tool, re routing capabilities 1, 0
+    
+    # separete detector lanes L0 ... L5 en pares
+    dtor_df_L0 = dtor_df.loc[dtor_df['interval_id'] == 'L0']
+    dtor_df_L1 = dtor_df.loc[dtor_df['interval_id'] == 'L1']
+    dtor_df_L2 = dtor_df.loc[dtor_df['interval_id'] == 'L2']
+    dtor_df_L3 = dtor_df.loc[dtor_df['interval_id'] == 'L3']
+    dtor_df_L4 = dtor_df.loc[dtor_df['interval_id'] == 'L4']
+    dtor_df_L5 = dtor_df.loc[dtor_df['interval_id'] == 'L5']
+    
+    
+    # ordena por tiempo
+    dtor_df_L0.sort_values(by ='interval_begin', inplace=True)
+    dtor_df_L1.sort_values(by ='interval_begin', inplace=True)
+    dtor_df_L2.sort_values(by ='interval_begin', inplace=True)
+    dtor_df_L3.sort_values(by ='interval_begin', inplace=True)
+    dtor_df_L4.sort_values(by ='interval_begin', inplace=True)
+    dtor_df_L5.sort_values(by ='interval_begin', inplace=True)
+    
+    s_L0 = dtor_df_L0.size
+    s_L1 = dtor_df_L1.size
+    s_L2 = dtor_df_L2.size
+    s_L3 = dtor_df_L3.size
+    s_L4 = dtor_df_L4.size
+    s_L5 = dtor_df_L5.size
+        
+    # la dimension debe ser la misma
+    if s_L0 == s_L2 == s_L3 == s_L4 == s_L5:
+        
+        L0_L1 = dtor_df_L0.merge(dtor_df_L1, on=['interval_begin', 'interval_end'], suffixes=['_L0','_L1'])
+        L2_L3 = dtor_df_L2.merge(dtor_df_L3, on=['interval_begin', 'interval_end'], suffixes=['_L2','_L3'])
+        L4_L5 = dtor_df_L4.merge(dtor_df_L4, on=['interval_begin', 'interval_end'], suffixes=['_L4','_L5'])
+        new_df = L0_L1.merge(L2_L3, on=['interval_begin', 'interval_end']).merge(L4_L5, on=['interval_begin', 'interval_end'])
+           
+        #Add L0 .. L5 and filter conteo vehiculos
+        new_df[f'{tool}'] = new_df['interval_nVehContrib_L0']\
+                           + new_df['interval_nVehContrib_L1']\
+                           + new_df['interval_nVehContrib_L2']\
+                           + new_df['interval_nVehContrib_L3']\
+                           + new_df['interval_nVehContrib_L4']\
+                           + new_df['interval_nVehContrib_L5']\
+                            
+        new_df['interval_occupancy'] = new_df['interval_occupancy_L0'] + new_df['interval_occupancy_L1'] + new_df['interval_occupancy_L2']
+        
+        
+        """
+        #Add L0 ..L6 and filter ocupacion de vehiculos
+        new_df[f'{tool}'] = new_df['interval_occupancy_L0']\
+                           + new_df['interval_occupancy_L1']\
+                           + new_df['interval_occupancy_L2']\
+                           + new_df['interval_occupancy_L3']\
+                           + new_df['interval_occupancy_L4']\
+                           + new_df['interval_occupancy_L5']\
+        """
+                
+        new_df = new_df.filter(['interval_begin',
+                                'interval_end',
+                                tool,
+                                #'interval_occupancy'
+                                ])
+        # Add new fields
+        new_df['Hour'] = range(24)
+        new_df['RP'] = routing
+        return new_df
+    else:
+        sys.exit('L0 and L1 are different size')
+
+
+
 # CPU
 def cpu_mem_folders(new_dir):
     parent_path = os.path.join(new_dir, "CPU")

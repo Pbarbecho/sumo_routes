@@ -8,6 +8,10 @@ from datetime import datetime
 import shutil
 import subprocess
 from utils import SUMO_preprocess, detector_cfg, kill_cpu_pid, create_folder, cpu_mem_folders
+from tqdm import tqdm
+
+
+edge_weights = '/root/Desktop/MSWIM/Revista/sim_files/templates/randomTripsWeigths.xml'
 
 # number of cpus
 processors = multiprocessing.cpu_count() # due to memory lack -> Catalunya  map = 2GB
@@ -22,7 +26,7 @@ else:
     sys.exit("please declare environment variable 'SUMO_HOME'")
     
 
-ERASE_FOLDERS = False
+ERASE_FOLDERS = True
     
 # General settings
 end_hour = 24
@@ -111,22 +115,24 @@ def RandomTrips():
         output = os.path.join(folders.random_dir,  f'{fname}.xml')
           
         vtype = "car"
-        
+        iter_seed = seed + 1
         begin = ini_time
         end =  begin + 15*60  # 15 minutes 
         
         # vehicles arrival 
         period = (end - begin) / veh_number
-      
         # Execute random trips
-        cmd = f"python {sumo_tool} \
-            -n {net_file} \
-            -a {add_file}  \
-            --edge-permission passenger  \
-            -b {begin} -e {end} -p {period} \
-            --trip-attributes 'type=\"{vtype}\" departSpeed=\"0\"' \
-            -s {seed}  \
-            -o {output}"
+        cmd = f"python {sumo_tool} -v \
+        --weights-prefix='RT'\
+        -n {net_file} \
+        -a {add_file}  \
+        --edge-permission passenger  \
+        -b {begin} -e {end} -p {period} \
+        --trip-attributes 'type=\"{vtype}\" departSpeed=\"0\"' \
+        -s {seed}  \
+        -o {output} \
+        --validate"
+        
         os.system(cmd)
     #--validate \
     #--edge-permission {vtype}  \
@@ -163,7 +169,7 @@ def RandomTrips():
         #subprocess.Popen(['/root/cpu_mem_check.sh', f'{folders.cpu}'])
         
         print(f'\nGenerating {len(col) * end_hour} randomTrips ......')
-        for hour in range(end_hour):  #hora
+        for hour in tqdm(range(end_hour)):  #hora
             for minute in col:    # minuto
                 vehicles = traffic_df[minute][hour]
                 name = f'{hour}_{minute}_randomTrips'
@@ -319,6 +325,7 @@ def RandomTrips():
 
     
     if ERASE_FOLDERS:
+        """
         ########################################################
         print('CPU/MEM/DISC check fix time.....')
         cmd = ['/root/CPU/disk.sh', f'{new_dir}', f'{folders.disk}']
@@ -330,20 +337,16 @@ def RandomTrips():
         cmd = ['/root/CPU/memory.sh', f'{folders.mem}']
         subprocess.Popen(cmd)
         ########################################################
-    
+        """
         # trips
         print_time('Cfg files generation')
         trips_for_traffic()
+        
         # via route Travessera
-        custom_routes()
+        #custom_routes()
+        
         update_vehicle_ID()
         
-        """
-        # dua routes
-        gen_DUArouter()
-        exec_duarouter_cmd(os.path.join(folders.config, 'duarouter.cfg.xml'))
-        
-        """
         # sumo sim
         cfg_full_name = gen_sumo_cfg()
         print_time('Begin simulation')

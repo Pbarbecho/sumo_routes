@@ -15,6 +15,17 @@ from matplotlib import rc
 import matplotlib.colors as mcolors
 from scipy.interpolate import interp1d
 
+# import sumo tool xmltocsv
+if 'SUMO_HOME' in os.environ:
+    tools = os.path.join('/opt/sumo-1.8.0/', 'tools')
+    curr_dir = os.path.dirname(os.path.realpath(__file__))
+    sys.path.append(os.path.join(tools))
+else:
+    sys.exit("please declare environment variable 'SUMO_HOME'")
+
+
+
+plt.rcParams.update({'font.size': 16})
 rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 ## for Palatino and other serif fonts use:
 #rc('font',**{'family':'serif','serif':['Palatino']})
@@ -52,7 +63,10 @@ def process_sumo_emissions_randomTrips():
             path = os.path.join(random_dir, routing, reroute, 'outputs/Hospitalet_SanAdria_tripinfo_0.xml')
             print(f'Routing = {routing}_{reroute}')
             df = emissions_tripinfo(path)
-            emisions_dic[f'{routing}_{reroute}'] = [df['NOx/km'].sum()]
+            
+            #emisions_dic[f'{routing}_{reroute}'] = [df['NOx/km'].sum()]
+            emisions_dic[f'{routing}_{reroute}'] = df['NOx/km']
+            
             out_file = os.path.join(output_dir, f'{routing}_{reroute}.csv')
             df.to_csv(out_file, index=False, header=True )
     return emisions_dic
@@ -67,7 +81,10 @@ def process_sumo_emissions():
             path = os.path.join(basedir, routing, reroute, 'outputs/Hospitalet_SanAdria_tripinfo_0.xml')
             print(f'Routing = {routing}_{reroute}')
             df = emissions_tripinfo(path)
-            emisions_dic[f'{routing}_{reroute}'] = [df['NOx/km'].sum()]
+          
+            #emisions_dic[f'{routing}_{reroute}'] = [df['NOx/km'].sum()]
+            emisions_dic[f'{routing}_{reroute}'] = df['NOx/km']
+                       
             out_file = os.path.join(output_dir, f'{routing}_{reroute}.csv')
             df.to_csv(out_file, index=False, header=True )
     return emisions_dic
@@ -89,13 +106,17 @@ def emissions_tripinfo(emissionsfile):
 
     df = pd.DataFrame(emissions_results, columns=['id', 'routeLength', 'NOx_abs'], dtype=('float'))
     
-    # compute emissions mg -> g/km
-    df['NOx/km'] = (df['NOx_abs'])/(df['routeLength'])
+    # compute emissions mg/m = g/km
+   
+    # NOx_abs = the complete amount during the simulation
+    # en g/km
+    df['NOx/km'] = (df['NOx_abs'])/(df['routeLength']/1000)
+    #df['NOx/km'] = ((df['NOx_abs']/1000))
     return df
     
 
 def rename_cols(results):
-    results = results.T
+    #results = results.T
     results.rename(columns={'ma_0_0':'MAR',
                            'ma_0_1':'MAR-R',
                            'dua_0_0':'DUAR',
@@ -116,23 +137,78 @@ def filter_no_reroute(results_df):
 
 
 def plot_emissions(emissions_df):
-    # plot traffic intensity
-    print(emissions_df)
-    emissions_df.T.plot.bar()
-    plt.ylabel('Total NOx emissions (g/km)')
+    fig, ax = plt.subplots(figsize=(8,4))
+    emissions_df.plot.bar(width=0.5, color=mcolors.TABLEAU_COLORS, ax=ax)
     
+    ymin = 60 
+    ymax = 90
+    plt.axhline(ymin,linestyle='dashed', color='tab:gray')
+    plt.axhline(ymax,linestyle='dashed', color='tab:gray')
+    style = dict(size=20, color='black')
+    margin = 3
+    ax.text(3.5,ymax+margin, "EURO 6", **style)
+            
+    
+    #plt.ylabel('Total NOx emissions (g/km)')
+    plt.title('Total NOx emissions (g/km)')
+    plt.xticks(rotation=0)
+    
+    
+def singlexml2csv(em_file, output):
+       
+    # SUMO tool xml into csv
+    sumo_tool = os.path.join(tools, 'xml', 'xml2csv.py')
+    # Run sumo tool with sumo output file as input
+    cmd = 'python {} {} -s , -o {}'.format(sumo_tool, em_file, output)
+   
+    os.system(cmd)
 
+
+def process_emissions_df(mdf):
+    # Prepare dataframe
+    mdf = mdf.T.reset_index()
+    # axis=1  for compute mean of rows
+    mdf['Mean'] = mdf.mean(axis=1, skipna=True)
+    mdf['SD'] = mdf.std(axis=1, skipna=True)
+    mdf = mdf.filter(['index','Mean','SD'])
+    return mdf
+
+
+def plot_metric(df, ylabel):
+     # Plot current metric 
+    fig, ax = plt.subplots(figsize=(8,4))
+    plt.errorbar(df['index'], df['Mean'], yerr=df['SD'], fmt="None", color='Black', elinewidth=1, capthick=1,errorevery=1, alpha=1, ms=4, capsize = 2)
+    plt.bar(df['index'], df['Mean'], width=0.5, color=mcolors.TABLEAU_COLORS)
+    #plt.ylabel(f'{ylabel}')
+ 
+    ymin = 60 
+    ymax = 90
+    plt.axhline(ymin,linestyle='dashed', color='tab:gray')
+    plt.axhline(ymax,linestyle='dashed', color='tab:gray')
+    style = dict(size=20, color='black')
+    margin = 3
+    ax.text(3.5,ymax+margin, "EURO 6", **style)
+            
+    
+    #plt.ylabel('Total NOx emissions (g/km)')
+    plt.title('Total NOx emissions (g/km)')
+    plt.xticks(rotation=0)
+  
+
+#singlexml2csv("/root/Desktop/MSWIM/Revista/sim_files/new_emissions/xml/edgedump.xml", "/root/Desktop/MSWIM/Revista/sim_files/new_emissions/csv/test.csv")
+  
 # read emission outputs 
 dic_A = process_sumo_emissions()    
 dic_B = process_sumo_emissions_randomTrips()
 # prepare dataframe
 dic_A.update(dic_B)
-print(dic_A)
-results_df = pd.DataFrame.from_dict(dic_A, orient='index', columns=['NOx'])
-results_df = rename_cols(results_df)
+new_df = pd.DataFrame(dic_A)
+new_df = rename_cols(new_df)
 # filter reroute no reroute
-results_df = filter_no_reroute(results_df)
-# plot emissions
-plot_emissions(results_df)
-plt.show()
-    
+new_df = filter_no_reroute(new_df)
+# Prepare dataframe
+#new_df = new_df.sum(skipna=True)
+
+new_df = process_emissions_df(new_df)
+plot_metric(new_df, 'ylabel')
+#plot_emissions(new_df)
