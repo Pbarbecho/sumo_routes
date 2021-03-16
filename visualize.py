@@ -13,7 +13,7 @@ from matplotlib import rc
 import matplotlib.colors as mcolors
 from utils import merge_detector_lanes
 
-plt.rcParams.update({'font.size': 24})
+plt.rcParams.update({'font.size': 20})
 rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 rc('text', usetex=False)
 
@@ -54,7 +54,7 @@ taz_dua_df = merge_detector_lanes(taz_dua_df_0, 'DUAR',0)
 taz_duaiter_df = merge_detector_lanes(taz_duaiter_df_0, 'DUAI',0)
 taz_od2_df = merge_detector_lanes(taz_od2_df_0, 'OD2',0)
 
-print(taz_dua_df)
+
 # Merge all tools
 merge_on = ['RP','Hour','interval_begin','interval_end']
 #traffic_df = random_df.merge(taz_ma_df, on='Hour').merge(taz_dua_df, on='Hour').merge(taz_duaiter_df, on='Hour').merge(taz_od2_df, on='Hour').merge(actual_traffic, on='Hour')
@@ -123,17 +123,32 @@ def plot_tools_traffic():
     linestyle_list = ['-', '--','-.',':','-','--'] 
    
     # plot traffic intensity
-    fig, ax = plt.subplots(figsize=(9,5))
+    fig, ax = plt.subplots(figsize=(8,5))
     for i, col in enumerate(cols):
         traffic_df.plot(kind='line', linewidth=2, linestyle=linestyle_list[i] , x='Hour',y=col, ax=ax)
-    plt.legend(prop={'size': 20})
-    plt.ylabel('# of vehicles')
+    plt.legend(prop={'size': 16})
+    plt.ylabel('Traffic intensity [veh/hour]')
     #plt.title('Traffic intensity')
     plt.xticks(np.arange(min(traffic_df['Hour']), max(traffic_df['Hour'])+1, 2.0))
     plt.yticks(np.arange(0, 300, 50))
     plt.grid(True, linewidth=0.5, linestyle='--')  
     
-
+def plot_tools_traffic():
+    # traffic tools
+    cols = ['MAR', 'DUAR', 'DUAI', 'RT', 'OD2', 'Actual']
+    linestyle_list = ['-', '--','-.',':','-','--'] 
+   
+    # plot traffic intensity
+    fig, ax = plt.subplots(figsize=(8,5))
+    for i, col in enumerate(cols):
+        traffic_df.plot(kind='line', linewidth=2, linestyle=linestyle_list[i] , x='Hour',y=col, ax=ax)
+    plt.legend(prop={'size': 16})
+    plt.ylabel('Traffic intensity [veh/hour]')
+    #plt.title('Traffic intensity')
+    plt.xticks(np.arange(min(traffic_df['Hour']), max(traffic_df['Hour'])+1, 2.0))
+    plt.yticks(np.arange(0, 300, 50))
+    plt.grid(True, linewidth=0.5, linestyle='--')  
+    
 
 def traffic_metrics(df, tittle):
     
@@ -157,7 +172,7 @@ def build_metrics_df(metric):
              #'MAR-R':taz_ma_traffic_metrics_df_1[f'{metric}'],
              'DUAR':taz_dua_traffic_metrics_df_0[f'{metric}'],
              #'DUAR-R':taz_dua_traffic_metrics_df_1[f'{metric}'],
-             'DUAI':taz_dua_traffic_metrics_df_0[f'{metric}'],
+             'DUAI':taz_duaiter_traffic_metrics_df_0[f'{metric}'],
              #'DUAI-R':taz_dua_traffic_metrics_df_1[f'{metric}'],
              'RT':random_traffic_metrics_df_0[f'{metric}'],
              #'RT-R':random_traffic_metrics_df_1[f'{metric}']
@@ -178,6 +193,26 @@ def prepare_fundamental_traffic_metrics(mdf):
 
 
 
+def OD_plots(df, tittle):
+    
+    # Plot origin destination (longitud latitude)
+    # receives df and title
+    mpl.style.use('default')
+    df = df.filter(['ini_x_pos', 'ini_y_pos','end_x_pos', 'end_y_pos' ])
+    
+  
+    
+    fig, ax = plt.subplots(figsize=(10,8))
+    df.plot.scatter(x='ini_x_pos',y='ini_y_pos', c='tab:orange', label='Origen', ax=ax)
+    df.plot.scatter(x='end_x_pos',y='end_y_pos', c='tab:blue', label='Destination', ax=ax)
+    plt.ylabel('Logitud')
+    plt.xlabel('Latitud')
+    plt.title(f'{tittle}')
+    plt.grid(True, linewidth=1, linestyle='--')      
+    ax.legend()
+    
+    
+
 def plot_metric(df, ylabel):
      # Plot current metric 
     fig, ax = plt.subplots(figsize=(8,4))
@@ -186,11 +221,31 @@ def plot_metric(df, ylabel):
     plt.ylabel(f'{ylabel}')
 
 
+def boxplot_metric(df, ylabel):
+    box_width = 0.3
+    df.plot.box(figsize=(4,2), showfliers=False,
+                whiskerprops=dict(color='tab:blue', linestyle='--', linewidth=1),
+                color=dict(boxes='tab:blue', whiskers='tab:blue', medians='tab:green', caps='tab:blue'),
+                widths=(box_width, box_width, box_width, box_width, box_width))
+    plt.ylabel(f'{ylabel}')
+    #plt.grid(axis='y', linewidth=1, linestyle='--')
+    plt.grid(axis='y', linewidth=1)
+    """
+    df.plot.box(showfliers=False, 
+         color=dict(boxes='r', whiskers='r', medians='r', caps='r'),
+         boxprops=dict(linestyle='-', linewidth=1.2),
+         flierprops=dict(linestyle='-', linewidth=1.2),
+         medianprops=dict(linestyle='-', linewidth=1.2),
+         whiskerprops=dict(linestyle='--', linewidth=1.2),
+         capprops=dict(linestyle='-', linewidth=1.2),
+         widths=(box_width, box_width, box_width, box_width, box_width))
+    """
  
 def fundamental_metric_plots():   
     # Plot  mean distance/triptime/speed
     # receives df and title
  
+    
     # traffic metrics
     cols = ['avrg_speed','tripinfo_duration','tripinfo_routeLength','tripinfo_timeLoss','tripinfo_waitingCount','tripinfo_waitingTime']
     for f in f_list:
@@ -202,18 +257,25 @@ def fundamental_metric_plots():
     # Tripinfo duration
     mdf = build_metrics_df('tripinfo_duration')/60 # minutes
     plot_df = prepare_fundamental_traffic_metrics(mdf)
+    
+    print('time',mdf.describe())
     plot_metric(plot_df, "Trip time [min]" )
+    boxplot_metric(mdf, "Trip time [min]")
     
     # Trip length
     mdf = build_metrics_df('tripinfo_routeLength')/1000 # minutes
+    
+    
     plot_df = prepare_fundamental_traffic_metrics(mdf)
     plot_metric(plot_df, "Trip length [km]" )
-    
+    boxplot_metric(mdf, "Trip length [km]" )
+    print('lenght',mdf.describe())
+    """
     # Mean Speed
     mdf = build_metrics_df('avrg_speed') # minutes
     plot_df = prepare_fundamental_traffic_metrics(mdf)
     plot_metric(plot_df, "Mean speed [m/s]" )
-    
+    """
     
     
 
@@ -282,7 +344,7 @@ def summary_plot():
     f_names_temp = ['MAR', 'DUAR', 'DUAI', 'RT', 'OD2'] # real va luego
     linestyle_list = ['-', '--','-.',':','-','--'] 
     # plot step running vehicles
-    fig, ax = plt.subplots(figsize=(8,4))
+    fig, ax = plt.subplots(figsize=(4,2))
     
     
     for i, name in enumerate(f_names_temp):
@@ -307,18 +369,17 @@ def summary_plot():
     #plt.xticks(np.arange(min(traffic_df['Hour']), max(traffic['Hour'])+1, 2.0))
     plt.grid(True, linewidth=1, linestyle='--')    
     
-     
+   
+
+#[OD_plots(f, name) for f,name in zip(f_list,f_names)]
 plot_actual_traffic() 
 plot_tools_traffic()
 fundamental_metric_plots()
 
-summary_plot()
+#summary_plot()
 
 """
 # points O/D
-[traffic_metrics(f, name) for f,name in zip(f_list,f_names)]
-# Fundamental metrics matrix   
-fundamental_metric_plots()
 # Histograma fundamental metrics
 #fundamental_metrics_hist()
 # Summary SUMO output

@@ -276,8 +276,7 @@ def RandomTrips():
              
         # Update outputs
         curr_name = origin_district[0] + '_' + destination_distric[0]
-        #outputs = ['fcd', 'vehroute', 'tripinfo']
-        outputs = ['fcd', 'emission', 'summary','tripinfo']
+        outputs = ['emission', 'summary','tripinfo']
         parent = tree.find('output')
         for out in outputs:
             ET.SubElement(parent, f'{out}-output').set('value', os.path.join(

@@ -134,15 +134,13 @@ def gen_route_files():
     for h in origin_district:
         print(f'\nGenerating cfg files for TAZ: {h}')
         for sd in tqdm(destination_distric):
-            time.sleep(1)
-            
             # build O file    
             O_name = os.path.join(folders.O, f'{h}_{sd}')
             create_O_file(O_name, f'{h}', f'{sd}', veh_num)
             
             # Generate cfg files 
-            for k in tqdm(range(n_repetitions)):
-                time.sleep(1) 
+            for k in range(n_repetitions):
+               
                 # backup O files
                 O_files = os.listdir(folders.O)
                 # Gen Od2trips/MArouter
@@ -161,7 +159,7 @@ def create_O_file(fname, origin_district, destination_distric, vehicles):
      
     col = list(df)
     col = col[1:-1]
-    for hour in range(end_hour):  #hora
+    for hour in tqdm(range(end_hour)):  #hora
         for minute in col:    # minuto
             vehicles = df[minute][hour]
             
@@ -171,7 +169,8 @@ def create_O_file(fname, origin_district, destination_distric, vehicles):
             
             O_file_name = os.path.join(folders.O,f'{h}_{m}_{name}')
             O = open(f"{O_file_name}", "w")
-            
+         
+            #print(f'{h}:{m} ->  {vehicles}')
             #num_vehicles = traffic_24[h] * 1.1 # margin of duarouter checkroutes
             text_list = ['$OR;D2\n',               # O format
                      f'{h}.{m} {h}.{until}\n',  # Time 0-48 hours
@@ -327,7 +326,7 @@ def gen_sumo_cfg(routing, dua, k):
     curr_name = curr_name[0] + '_' + curr_name[1]
     
     # outputs 
-    outputs = ['fcd', 'emission', 'summary', 'tripinfo']
+    outputs = ['emission', 'summary', 'tripinfo']
     for out in outputs:
         ET.SubElement(parent, f'{out}-output').set('value', os.path.join(
             folders.outputs, f'{curr_name}_{out}_{k}.xml'))    
@@ -342,7 +341,7 @@ def gen_sumo_cfg(routing, dua, k):
     
 def exec_od2trips(fname, tripfile):
     print('\nRouting .......')
-    cmd = f'od2trips -c {fname}'
+    cmd = f'od2trips -v -c {fname}'
     os.system(cmd)
     # remove fromtotaz
     output_file = f'{tripfile}.xml'
@@ -351,7 +350,6 @@ def exec_od2trips(fname, tripfile):
     return output_file
     
     
-
 
 def exec_duarouter_cmd(fname):
     print('\nRouting  .......')

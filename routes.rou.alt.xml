@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on Fri Feb 19 22:21:20 2021 by Eclipse SUMO duarouter Version 1.8.0
+<!-- generated on Sun Feb 21 20:12:33 2021 by Eclipse SUMO duarouter Version 1.8.0
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/duarouterConfiguration.xsd">
 
     <input>
@@ -29,7 +29,7 @@
 -->
 
 <routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
-    <vType id="car" speedFactor="normc(1.00,0.60,0.80,1.20)" vClass="passenger" emissionClass="HBEFA3/LDV_G_EU6" color="yellow"/>
+    <vType id="car" maxSpeed="14.00" speedFactor="normc(1.00,0.80,0.70,1.20)" vClass="passenger" emissionClass="HBEFA3/LDV_D_EU6" color="yellow"/>
     <vehicle id="0" type="car" depart="85500.00" departSpeed="0.00">
         <routeDistribution last="0">
             <route cost="326.27" probability="1.00000000" edges="4776833#3 262723582#2 35465964#7 541430463#3 541430463#4 541430463#5 541430463#7 541430463#10 450280363#0 -544164277 257568505 237659844#0 544200294 544617969 -397481041#3 -397481041#0 226319973 554016569 522164020 544117078 181849012#0 544200290 116315069#0 307933383#0 307933383#1 307933383#2 307933383#5 307933383#6 307933383#8 307933383#10 307933383#11 237645185#0 237645185#1 237645185#2 579981380#0 579981380#1 579981380#3 449991630#0 449991630#1 449991630#2 295124098#20 295124098#21 295124098#23 295124098#25 295124098#26 483469230#7 483469230#9 483469230#10 483469230#12 483469230#13 483469230#15 553743885#1 238179183#0 238179183#1 238179183#2 238179183#4 238179183#5 545718427#0 545718427#1"/>

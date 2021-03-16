@@ -8,6 +8,7 @@ import multiprocessing
 import xml.etree.ElementTree as ET
 import psutil
 import shutil
+import numpy as np
 
 # import sumo tool xmltocsv
 os.environ['SUMO_HOME']='/opt/sumo-1.8.0'
@@ -22,6 +23,26 @@ if 'SUMO_HOME' in os.environ:
     sys.path.append(os.path.join(tools))
 else:
     sys.exit("please declare environment variable 'SUMO_HOME'")
+
+
+def process_emissions_file(path_csv,routing):
+    # process sumo emissions ouput file for a full day simulation 24 hrs
+    df = pd.read_csv(path_csv)
+    df = df.filter(items=['timestep_time','vehicle_NOx'])
+    df = df.groupby(['timestep_time']).sum().reset_index()
+    df = df.groupby(pd.cut(df["timestep_time"], np.arange(0, 86400+1, 3600))).sum().reset_index(drop=True)
+    df['Hour'] = range(24)
+    df = df.filter(items=['Hour','vehicle_NOx'])
+    df['Routing'] = f'{routing}'
+    return df
+    
+
+def filter_emission_traffic_jams(df):
+    print(df.shape)
+    df = df[df['routeLength']>=500] # filter distances < 500m
+    print(df.shape)
+    return df
+
 
 
 def parallel_batch_size(plist):
@@ -240,7 +261,7 @@ def SUMO_preprocess(options):
             sys.exit(f'Missing csv files: {options.xmltocsv}')
             
  
-           
+              
     def merge_files(options):
         #combine all files in the parsed dir
         parsed_files = os.listdir(options.parsed)
@@ -287,19 +308,21 @@ def SUMO_preprocess(options):
         #vehroute = vehroute.filter(['route_edges','vehicle_arrival','vehicle_depart','vehicle_departSpeed','vehicle_id','vehicle_routeLength'])
         #vehroute['route_edges'] = vehroute['route_edges'].fillna(0)
                
-        fcd = group_df.loc[group_df['Output'] == 'fcd', 'Dataframe'].iloc[0]
+        #fcd = group_df.loc[group_df['Output'] == 'fcd', 'Dataframe'].iloc[0]
+        
         tripinfo = group_df.loc[group_df['Output'] == 'tripinfo', 'Dataframe'].iloc[0]
         #taz_locations_edgenum_df = lanes_counter_taz_locations(vehroute)                  # Count edges on route from vehroute file and get from/to TAZ locations
-        veh_speed_positions_df = avrg_speed_and_geo_positions(fcd)                        # Get average speed and initial/end positions (x,y)
-        tripinfo_df = veh_trip_info(tripinfo) 
         
-      
+        #veh_speed_positions_df = avrg_speed_and_geo_positions(fcd)                        # Get average speed and initial/end positions (x,y)
+        tripinfo_df = veh_trip_info(tripinfo) 
         
         # merge dataframes
         #sdata = taz_locations_edgenum_df.merge(veh_speed_positions_df,on='ID').merge(tripinfo_df,on='ID')
-        sdata = veh_speed_positions_df.merge(tripinfo_df,on='ID')
+        #sdata = veh_speed_positions_df.merge(tripinfo_df,on='ID')
         # save each scenario in parsed files
-        save_file(sdata, f'{df_name}', options.parsed)
+        #save_file(sdata, f'{df_name}', options.parsed)
+       
+        save_file(tripinfo_df, f'{df_name}', options.parsed)
 
 
        
