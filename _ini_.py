@@ -6,4 +6,4 @@ from .cli import cli
 
 #__all__ = ('custom_filter_plots', 'run', 'merge_files')
 
-name = 'stg'
+name = 'STG'
